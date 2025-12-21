@@ -1,0 +1,163 @@
+version: "4.1"
+name: at32f403a_template
+type: ARM
+deviceName: null
+packDir: null
+srcDirs:
+  - libraries
+  - Board
+  - Application
+  - Middlewares
+  - Test
+virtualFolder:
+  name: <virtual_root>
+  files: []
+  folders: []
+dependenceList: []
+outDir: build
+miscInfo:
+  uid: aadd6b1a734920d9d5da9e3ef0996e9f
+targets:
+  Debug:
+    cppPreprocessAttrs:
+      defineList:
+        - _DEBUG
+        - USE_STDPERIPH_DRIVER
+        - AT_START_F403A_V1
+        - AT32F403AVGT7
+      incList:
+        - libraries/cmsis/cm4/core_support
+        - libraries/cmsis/cm4/device_support
+        - libraries/drivers/inc
+        - Board
+        - Application
+        - Middlewares/rt-thread/include
+        - Middlewares/rt-thread/components/finsh
+        - Middlewares/rt-thread/components/ipc/include
+        - Middlewares/rt-thread/components/ulog
+        - Middlewares/littlefs
+        - Middlewares/rt-thread/components/utest
+        - Middlewares/fatfs/source
+      libList: []
+    excludeList:
+      - libraries/cmsis/cm4/device_support/startup/mdk/startup_at32f403a_407.s
+      - libraries/cmsis/cm4/device_support/startup/iar/startup_at32f403a_407.s
+      - libraries/cmsis/dsp
+      - project/src/startup_at32f403a_407.s
+      - Board/misc/startup_at32f403a_407.s
+      - Middlewares/rt-thread/libcpu/arm/arm926
+      - Middlewares/rt-thread/libcpu/arm/armv6
+      - Middlewares/rt-thread/libcpu/arm/cortex-a
+      - Middlewares/rt-thread/libcpu/arm/cortex-m0
+      - Middlewares/rt-thread/libcpu/arm/cortex-m23
+      - Middlewares/rt-thread/libcpu/arm/cortex-m3
+      - Middlewares/rt-thread/libcpu/arm/cortex-m33
+      - Middlewares/rt-thread/libcpu/arm/cortex-m7
+      - Middlewares/rt-thread/libcpu/arm/cortex-r4
+      - Middlewares/rt-thread/libcpu/arm/cortex-m4/context_iar.S
+      - Middlewares/rt-thread/libcpu/arm/cortex-m4/context_rvds.S
+      - Middlewares/rt-thread/libcpu/arm/common/divsi3.S
+      - Middlewares/rt-thread/libcpu/risc-v
+      - Middlewares/littlefs/scripts
+      - Middlewares/littlefs/runners
+      - Middlewares/littlefs/benches
+      - Middlewares/littlefs/bd
+      - Middlewares/littlefs/tests
+      - Middlewares/fatfs/documents
+    toolchain: GCC
+    toolchainConfigMap:
+      AC6:
+        archExtensions: ""
+        cpuType: Cortex-M4
+        floatingPointHardware: single
+        options:
+          version: 3
+          afterBuildTasks: []
+          asm-compiler:
+            $use: asm-auto
+            misc-controls: ""
+          beforeBuildTasks: []
+          c/cpp-compiler:
+            language-c: c99
+            language-cpp: c++11
+            link-time-optimization: false
+            optimization: level-0
+          global:
+            output-debug-info: enable
+            use-microLIB: false
+          linker:
+            $outputTaskExcludes:
+              - .bin
+            misc-controls: --diag_suppress=L6329
+            output-format: elf
+        scatterFilePath: <YOUR_SCATTER_FILE>.sct
+        storageLayout:
+          RAM:
+            - id: 1
+              isChecked: true
+              mem:
+                size: "0x5000"
+                startAddr: "0x20000000"
+              noInit: false
+              tag: IRAM
+          ROM:
+            - id: 1
+              isChecked: true
+              isStartup: true
+              mem:
+                size: "0x10000"
+                startAddr: "0x08000000"
+              tag: IROM
+        useCustomScatterFile: false
+      GCC:
+        archExtensions: ""
+        cpuType: Cortex-M4
+        floatingPointHardware: single
+        options:
+          version: 5
+          afterBuildTasks: []
+          asm-compiler:
+            ASM_FLAGS: -Wa,-mimplicit-it=always
+          beforeBuildTasks: []
+          c/cpp-compiler:
+            language-c: c11
+            language-cpp: c++11
+            no-exceptions: true
+            no-rtti: true
+            no-threadsafe-statics: true
+            no-use-cxa-atexit: true
+            one-elf-section-per-data: true
+            one-elf-section-per-function: true
+            optimization: level-debug
+            warnings: all-warnings
+          global:
+            $float-abi-type: hard
+            arm-thumb-mode: thumb
+            output-debug-info: enable
+            use-newlib-nano: true
+          linker:
+            $toolName: auto
+            LIB_FLAGS: -lm
+            output-format: elf
+            remove-unused-input-sections: true
+        scatterFilePath: Board/misc/AT32F403AxG_FLASH.ld
+        storageLayout:
+          RAM: []
+          ROM: []
+        useCustomScatterFile: true
+    uploadConfigMap:
+      JLink:
+        baseAddr: ""
+        bin: ""
+        cpuInfo:
+          cpuName: "null"
+          vendor: "null"
+        otherCmds: ""
+        proType: 1
+        speed: 8000
+      OpenOCD:
+        baseAddr: "0x08000000"
+        bin: ""
+        interface: atlink
+        target: at32f403axG
+    uploader: OpenOCD

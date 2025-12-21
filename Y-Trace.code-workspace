@@ -1,0 +1,24 @@
+{
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
+        "astyle.cmd_options": [
+                "--style=allman",
+                "--indent=spaces=4",
+                "--indent-preproc-block",
+                "--pad-oper",
+                "--pad-header",
+                "--unpad-paren",
+                "--align-pointer=name",
+                "--lineend=linux",
+                "--convert-tabs",
+                "--suffix=none"
+            ]
+
+
+    },
+    "extensions": {}
+}
