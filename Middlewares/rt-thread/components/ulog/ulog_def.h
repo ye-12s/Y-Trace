@@ -161,7 +161,7 @@ extern "C" {
 
 /* buffer size for every line's log */
 #ifndef ULOG_LINE_BUF_SIZE
-#define ULOG_LINE_BUF_SIZE             128
+#define ULOG_LINE_BUF_SIZE             1024
 #endif
 
 /* output filter's tag max length */
@@ -175,20 +175,22 @@ extern "C" {
 #endif
 
 #ifndef ULOG_NEWLINE_SIGN
-#define ULOG_NEWLINE_SIGN              "\r\n"
+#define ULOG_NEWLINE_SIGN              "\n"
 #endif
 
 #define ULOG_FRAME_MAGIC               0x10
 
 /* tag's level filter */
-struct ulog_tag_lvl_filter {
+struct ulog_tag_lvl_filter
+{
     char tag[ULOG_FILTER_TAG_MAX_LEN + 1];
     rt_uint32_t level;
     rt_slist_t list;
 };
 typedef struct ulog_tag_lvl_filter *ulog_tag_lvl_filter_t;
 
-struct ulog_frame {
+struct ulog_frame
+{
     /* magic word is 0x10 ('lo') */
     rt_uint32_t magic: 8;
     rt_uint32_t is_raw: 1;
@@ -199,7 +201,8 @@ struct ulog_frame {
 };
 typedef struct ulog_frame *ulog_frame_t;
 
-struct ulog_backend {
+struct ulog_backend
+{
     char name[RT_NAME_MAX];
     rt_bool_t support_color;
     void (*init)(struct ulog_backend *backend);
