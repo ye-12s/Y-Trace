@@ -17,12 +17,11 @@ int drv_lcd_clear(void);
 int drv_lcd_refresh(void);
 int drv_lcd_point(size_t x, size_t y, uint16_t color);
 int drv_lcd_full(size_t xStart, size_t yStart, size_t xEnd, size_t yEnd, uint16_t color);
-
-
-
+int drv_lcd_set_window(size_t xStart, size_t yStart, size_t xEnd, size_t yEnd);
+int drv_lcd_write_pixels(const uint16_t *pixels, size_t count);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //Y_TRACK_DRV_LCD_H
+#endif // Y_TRACK_DRV_LCD_H
