@@ -1,3 +1,5 @@
+option(Y_TRACE_ENABLE_LVGL "Build and start the LVGL UI path" OFF)
+
 set(Y_TRACE_DEFINES
     _DEBUG
     USE_STDPERIPH_DRIVER
@@ -18,8 +20,15 @@ set(Y_TRACE_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/rt-thread/components/ulog
     ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/rt-thread/components/utest
     ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/fatfs/source
+    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares
     ${CMAKE_CURRENT_BINARY_DIR}/include
 )
+
+if(Y_TRACE_ENABLE_LVGL)
+    list(APPEND Y_TRACE_INCLUDE_DIRS
+        ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/lvgl
+    )
+endif()
 
 set(Y_TRACE_CPU_FLAGS
     -mthumb

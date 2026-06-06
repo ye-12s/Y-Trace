@@ -21,6 +21,19 @@ set_source_files_properties(Application/utils/minmea/minmea.c PROPERTIES
 set_source_files_properties(Board/syscall.c PROPERTIES
     COMPILE_DEFINITIONS "_malloc_r=ytrace_rt_malloc_r;_realloc_r=ytrace_rt_realloc_r;_calloc_r=ytrace_rt_calloc_r;_free_r=ytrace_rt_free_r"
 )
+set_source_files_properties(
+    Application/sample/lcd_refresh_sample.c
+    Board/Drivers/drv_lcd.c
+    PROPERTIES COMPILE_OPTIONS -O2
+)
+
+if(Y_TRACE_ENABLE_LVGL)
+    set_source_files_properties(
+        ${Y_TRACE_LVGL_SOURCES}
+        Application/port/lvgl_port.c
+        PROPERTIES COMPILE_OPTIONS -O2
+    )
+endif()
 
 add_executable(${PROJECT_NAME} ${Y_TRACE_SOURCES})
 

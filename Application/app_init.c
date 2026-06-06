@@ -2,6 +2,7 @@
 #include "Drivers/drv_lcd.h"
 #include "Drivers/drv_soft_iic.h"
 #include "rtthread.h"
+#include "sample/sample.h"
 
 #define LOG_TAG "app.init"
 #define LOG_LVL LOG_LVL_DBG
@@ -28,6 +29,13 @@ INIT_COMPONENT_EXPORT(lcd_init);
 
 static int app_init(void)
 {
+    int result = lcd_refresh_sample_init();
+    if (result != 0) {
+        LOG_E("LCD refresh sample initialization failed: %d", result);
+        return result;
+    }
+
+    LOG_I("LCD refresh sample initialized.");
     LOG_I("Application initialization completed.");
     return 0;
 }

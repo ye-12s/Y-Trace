@@ -1,0 +1,66 @@
+#ifndef LV_CONF_H
+#define LV_CONF_H
+
+#include <stdint.h>
+
+#define LV_COLOR_DEPTH 16
+#define LV_COLOR_16_SWAP 1
+
+#define LV_MEM_CUSTOM 1
+#define LV_MEM_CUSTOM_INCLUDE "rtthread.h"
+#define LV_MEM_CUSTOM_ALLOC rt_malloc
+#define LV_MEM_CUSTOM_FREE rt_free
+#define LV_MEM_CUSTOM_REALLOC rt_realloc
+
+#define LV_MEM_BUF_MAX_NUM 8
+#define LV_MEMCPY_MEMSET_STD 1
+
+#define LV_DISP_DEF_REFR_PERIOD 16
+
+#define LV_TICK_CUSTOM 1
+#define LV_TICK_CUSTOM_INCLUDE "rtthread.h"
+#if RT_TICK_PER_SECOND == 1000
+#define LV_TICK_CUSTOM_SYS_TIME_EXPR ((uint32_t)rt_tick_get())
+#else
+#define LV_TICK_CUSTOM_SYS_TIME_EXPR ((uint32_t)((rt_tick_get() / RT_TICK_PER_SECOND) * 1000U))
+#endif
+
+#define LV_DPI_DEF 130
+#define LV_DRAW_COMPLEX 1
+#define LV_SHADOW_CACHE_SIZE 0
+#define LV_CIRCLE_CACHE_SIZE 0
+#define LV_IMG_CACHE_DEF_SIZE 0
+#define LV_GRAD_CACHE_DEF_SIZE 0
+#define LV_DITHER_GRADIENT 0
+
+#define LV_USE_LOG 0
+#define LV_USE_ASSERT_NULL 1
+#define LV_USE_ASSERT_MALLOC 1
+#define LV_USE_ASSERT_STYLE 0
+#define LV_USE_ASSERT_MEM_INTEGRITY 0
+#define LV_USE_ASSERT_OBJ 0
+
+#define LV_USE_PERF_MONITOR 1
+#define LV_USE_PERF_MONITOR_POS LV_ALIGN_BOTTOM_RIGHT
+#define LV_USE_MEM_MONITOR 0
+
+#define LV_SPRINTF_CUSTOM 0
+
+#define LV_FONT_MONTSERRAT_12 0
+#define LV_FONT_MONTSERRAT_14 1
+#define LV_FONT_MONTSERRAT_16 0
+#define LV_FONT_DEFAULT &lv_font_montserrat_14
+
+#define LV_USE_THEME_DEFAULT 1
+#define LV_THEME_DEFAULT_DARK 0
+#define LV_THEME_DEFAULT_GROW 0
+#define LV_THEME_DEFAULT_TRANSITION_TIME 0
+
+#define LV_BUILD_EXAMPLES 0
+#define LV_USE_DEMO_WIDGETS 0
+#define LV_USE_DEMO_KEYPAD_AND_ENCODER 0
+#define LV_USE_DEMO_BENCHMARK 0
+#define LV_USE_DEMO_STRESS 0
+#define LV_USE_DEMO_MUSIC 0
+
+#endif

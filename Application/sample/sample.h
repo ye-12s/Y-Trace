@@ -10,6 +10,7 @@ extern "C" {
 int mag_sample(struct _soft_i2c_bus *bus);
 int imu_sample(struct _soft_i2c_bus *bus);
 int gnss_sample_init(void);
+int lcd_refresh_sample_init(void);
 
 #ifdef __cplusplus
 }

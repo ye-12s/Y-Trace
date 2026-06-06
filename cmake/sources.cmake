@@ -4,6 +4,7 @@ set(Y_TRACE_SOURCES
     Application/port/diskio.c
     Application/sample/gnss_sample.c
     Application/sample/imu_sample.c
+    Application/sample/lcd_refresh_sample.c
     Application/sample/mag_sample.c
     Application/utils/minmea/minmea.c
 
@@ -16,6 +17,7 @@ set(Y_TRACE_SOURCES
     Board/Drivers/drv_lis3mdltr.c
     Board/Drivers/drv_lsm6dsm.c
     Board/Drivers/drv_pin.c
+    Board/Drivers/drv_sram.c
     Board/Drivers/drv_sdio.c
     Board/Drivers/drv_soft_iic.c
     Board/Drivers/drv_uart.c
@@ -86,3 +88,13 @@ set(Y_TRACE_SOURCES
     Middlewares/rt-thread/src/timer.c
 
 )
+
+if(Y_TRACE_ENABLE_LVGL)
+    list(APPEND Y_TRACE_SOURCES Application/port/lvgl_port.c)
+
+    file(GLOB_RECURSE Y_TRACE_LVGL_SOURCES CONFIGURE_DEPENDS
+        ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/lvgl/src/*.c
+    )
+
+    list(APPEND Y_TRACE_SOURCES ${Y_TRACE_LVGL_SOURCES})
+endif()

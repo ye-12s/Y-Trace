@@ -20,18 +20,32 @@
 #define LCD_CS_PIN GET_PIN(B, 12)
 #endif
 
-#define LCD_RST_PIN     GET_PIN(B, 14)
-#define LCD_DC_PIN      GET_PIN(C, 6)
-#define LCD_BL_PIN      GET_PIN(B, 0)
+#define LCD_RST_PIN GET_PIN(B, 14)
+#define LCD_DC_PIN  GET_PIN(C, 6)
+#define LCD_BL_PIN  GET_PIN(B, 0)
 
-#define LCD_SPIx        SPI2
-#define LCD_SPI_SDA     GET_PIN(B, 15)
-#define LCD_SPI_CLK     GET_PIN(B, 13)
+#define LCD_SPIx    SPI2
+#define LCD_SPI_SDA GET_PIN(B, 15)
+#define LCD_SPI_CLK GET_PIN(B, 13)
 
-#define LCD_COLOR_BLACK 0x0000U
+#ifndef LCD_SPI_MCLK_DIVISION
+#define LCD_SPI_MCLK_DIVISION SPI_MCLK_DIV_2
+#endif
 
-#define LCD_CMD_MODE()  pin_write(LCD_DC_PIN, 0)
-#define LCD_DATA_MODE() pin_write(LCD_DC_PIN, 1)
+#define LCD_DMAx         DMA1
+#define LCD_DMA_CHANNEL  DMA1_CHANNEL5
+#define LCD_DMA_FLEX_CH  FLEX_CHANNEL5
+#define LCD_DMA_TX_REQ   DMA_FLEXIBLE_SPI2_TX
+#define LCD_DMA_DONE     DMA1_FDT5_FLAG
+#define LCD_DMA_ERR      DMA1_DTERR5_FLAG
+#define LCD_DMA_CLR      DMA1_GL5_FLAG
+#define LCD_DMA_MAX_SIZE UINT16_MAX
+#define LCD_DMA_INT      (DMA_FDT_INT | DMA_DTERR_INT)
+
+#define LCD_COLOR_BLACK  0x0000U
+
+#define LCD_CMD_MODE()   pin_write(LCD_DC_PIN, 0)
+#define LCD_DATA_MODE()  pin_write(LCD_DC_PIN, 1)
 
 static void _lcd_hw_spi_init(void);
 static void _lcd_reg_config(void);
@@ -43,6 +57,17 @@ static void _lcd_write_cmd(uint8_t cmd);
 static void _lcd_write_data8(uint8_t data);
 static void _lcd_write_data(const uint8_t *data, size_t len);
 static void _lcd_write_color_repeat(uint16_t color, size_t count);
+static int _lcd_spi_write_dma(const uint8_t *data, size_t len);
+static int _lcd_spi_write_dma_start(const uint8_t *data, size_t len, bool irq_enable);
+static void _lcd_spi_write_dma_stop(void);
+
+typedef struct {
+    volatile bool active;
+    drv_lcd_write_done_cb_t done_cb;
+    void *user_data;
+} lcd_dma_async_state_t;
+
+static lcd_dma_async_state_t lcd_dma_async_state;
 
 static bool _lcd_has_cs(void)
 {
@@ -86,6 +111,85 @@ static void _lcd_spi_write(const uint8_t *data, size_t len)
     }
 }
 
+static int _lcd_spi_write_dma_start(const uint8_t *data, size_t len, bool irq_enable)
+{
+    if (data == RT_NULL || len == 0) {
+        return -RT_EINVAL;
+    }
+    if (len > LCD_DMA_MAX_SIZE) {
+        return -RT_EINVAL;
+    }
+
+    dma_init_type dma_init_struct;
+
+    dma_channel_enable(LCD_DMA_CHANNEL, FALSE);
+    dma_interrupt_enable(LCD_DMA_CHANNEL, LCD_DMA_INT, FALSE);
+    dma_flag_clear(LCD_DMA_CLR);
+    dma_default_para_init(&dma_init_struct);
+    dma_init_struct.peripheral_base_addr  = (uint32_t)&LCD_SPIx->dt;
+    dma_init_struct.memory_base_addr      = (uint32_t)data;
+    dma_init_struct.direction             = DMA_DIR_MEMORY_TO_PERIPHERAL;
+    dma_init_struct.buffer_size           = (uint16_t)len;
+    dma_init_struct.peripheral_inc_enable = FALSE;
+    dma_init_struct.memory_inc_enable     = TRUE;
+    dma_init_struct.peripheral_data_width = DMA_PERIPHERAL_DATA_WIDTH_BYTE;
+    dma_init_struct.memory_data_width     = DMA_MEMORY_DATA_WIDTH_BYTE;
+    dma_init_struct.loop_mode_enable      = FALSE;
+    dma_init_struct.priority              = DMA_PRIORITY_VERY_HIGH;
+    dma_init(LCD_DMA_CHANNEL, &dma_init_struct);
+
+    if (irq_enable) {
+        dma_interrupt_enable(LCD_DMA_CHANNEL, LCD_DMA_INT, TRUE);
+    }
+
+    spi_i2s_dma_transmitter_enable(LCD_SPIx, TRUE);
+    dma_channel_enable(LCD_DMA_CHANNEL, TRUE);
+
+    return 0;
+}
+
+static void _lcd_spi_write_dma_stop(void)
+{
+    dma_channel_enable(LCD_DMA_CHANNEL, FALSE);
+    dma_interrupt_enable(LCD_DMA_CHANNEL, LCD_DMA_INT, FALSE);
+    spi_i2s_dma_transmitter_enable(LCD_SPIx, FALSE);
+    dma_flag_clear(LCD_DMA_CLR);
+}
+
+static int _lcd_spi_write_dma(const uint8_t *data, size_t len)
+{
+    if (data == RT_NULL || len == 0) {
+        return -RT_EINVAL;
+    }
+
+    while (lcd_dma_async_state.active) {
+        rt_thread_mdelay(1);
+    }
+
+    while (len > 0) {
+        size_t chunk = len > LCD_DMA_MAX_SIZE ? LCD_DMA_MAX_SIZE : len;
+        int result   = _lcd_spi_write_dma_start(data, chunk, false);
+        if (result != 0) {
+            return result;
+        }
+
+        while (dma_flag_get(LCD_DMA_DONE) == RESET) {
+            if (dma_flag_get(LCD_DMA_ERR) == SET) {
+                _lcd_spi_write_dma_stop();
+                return -RT_ERROR;
+            }
+        }
+
+        _lcd_spi_write_dma_stop();
+        _lcd_spi_wait_idle();
+
+        data += chunk;
+        len -= chunk;
+    }
+
+    return 0;
+}
+
 static void _lcd_write_cmd(uint8_t cmd)
 {
     _lcd_select();
@@ -116,12 +220,22 @@ static void _lcd_write_data(const uint8_t *data, size_t len)
 
 static void _lcd_write_color_repeat(uint16_t color, size_t count)
 {
-    uint8_t pixel[2] = {(uint8_t)(color >> 8), (uint8_t)color};
+    uint8_t pixels[128];
+    size_t pixels_per_chunk = sizeof(pixels) / 2U;
+
+    for (size_t i = 0; i < pixels_per_chunk; i++) {
+        pixels[i * 2U]      = (uint8_t)(color >> 8);
+        pixels[i * 2U + 1U] = (uint8_t)color;
+    }
 
     _lcd_select();
     LCD_DATA_MODE();
-    for (size_t i = 0; i < count; i++) {
-        _lcd_spi_write(pixel, sizeof(pixel));
+    while (count > 0) {
+        size_t chunk = count > pixels_per_chunk ? pixels_per_chunk : count;
+        if (_lcd_spi_write_dma(pixels, chunk * 2U) != 0) {
+            break;
+        }
+        count -= chunk;
     }
     _lcd_deselect();
 }
@@ -160,6 +274,16 @@ int drv_lcd_set_window(size_t xStart, size_t yStart, size_t xEnd, size_t yEnd)
 
     _lcd_write_cmd(0x2C);
     return 0;
+}
+
+size_t drv_lcd_get_width(void)
+{
+    return LCD_WIDTH;
+}
+
+size_t drv_lcd_get_height(void)
+{
+    return LCD_HEIGHT;
 }
 
 int drv_lcd_set_backlight(int level)
@@ -222,6 +346,50 @@ int drv_lcd_write_pixels(const uint16_t *pixels, size_t count)
         _lcd_spi_write(pixel, sizeof(pixel));
     }
     _lcd_deselect();
+    return 0;
+}
+
+int drv_lcd_write_bytes(const uint8_t *data, size_t len)
+{
+    if (data == RT_NULL || len == 0) {
+        return -RT_EINVAL;
+    }
+
+    _lcd_select();
+    LCD_DATA_MODE();
+    int result = _lcd_spi_write_dma(data, len);
+    _lcd_deselect();
+    return result;
+}
+
+int drv_lcd_write_bytes_async(const uint8_t *data, size_t len, drv_lcd_write_done_cb_t done_cb, void *user_data)
+{
+    if (data == RT_NULL || len == 0 || done_cb == RT_NULL) {
+        return -RT_EINVAL;
+    }
+    if (len > LCD_DMA_MAX_SIZE) {
+        return -RT_EINVAL;
+    }
+    if (lcd_dma_async_state.active) {
+        return -RT_EBUSY;
+    }
+
+    _lcd_select();
+    LCD_DATA_MODE();
+
+    lcd_dma_async_state.done_cb   = done_cb;
+    lcd_dma_async_state.user_data = user_data;
+    lcd_dma_async_state.active    = true;
+
+    int result = _lcd_spi_write_dma_start(data, len, true);
+    if (result != 0) {
+        lcd_dma_async_state.active    = false;
+        lcd_dma_async_state.done_cb   = RT_NULL;
+        lcd_dma_async_state.user_data = RT_NULL;
+        _lcd_deselect();
+        return result;
+    }
+
     return 0;
 }
 
@@ -322,8 +490,11 @@ static void _lcd_hw_spi_init(void)
 
     crm_periph_clock_enable(CRM_GPIOB_PERIPH_CLOCK, TRUE);
     crm_periph_clock_enable(CRM_SPI2_PERIPH_CLOCK, TRUE);
+    crm_periph_clock_enable(CRM_DMA1_PERIPH_CLOCK, TRUE);
+    dma_flexible_config(LCD_DMAx, LCD_DMA_FLEX_CH, LCD_DMA_TX_REQ);
+    nvic_irq_enable(DMA1_Channel5_IRQn, 1, 0);
 
-    gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_MODERATE;
+    gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
     gpio_init_struct.gpio_out_type       = GPIO_OUTPUT_PUSH_PULL;
     gpio_init_struct.gpio_mode           = GPIO_MODE_MUX;
     gpio_init_struct.gpio_pins           = GPIO_PINS_13;
@@ -331,7 +502,7 @@ static void _lcd_hw_spi_init(void)
     gpio_init(GPIOB, &gpio_init_struct);
 
     /* configure the MOSI pin */
-    gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_MODERATE;
+    gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
     gpio_init_struct.gpio_out_type       = GPIO_OUTPUT_PUSH_PULL;
     gpio_init_struct.gpio_mode           = GPIO_MODE_MUX;
     gpio_init_struct.gpio_pins           = GPIO_PINS_15;
@@ -343,7 +514,7 @@ static void _lcd_hw_spi_init(void)
     spi_init_struct.master_slave_mode      = SPI_MODE_MASTER;
     spi_init_struct.frame_bit_num          = SPI_FRAME_8BIT;
     spi_init_struct.first_bit_transmission = SPI_FIRST_BIT_MSB;
-    spi_init_struct.mclk_freq_division     = SPI_MCLK_DIV_8;
+    spi_init_struct.mclk_freq_division     = LCD_SPI_MCLK_DIVISION;
     spi_init_struct.clock_polarity         = SPI_CLOCK_POLARITY_HIGH;
     spi_init_struct.clock_phase            = SPI_CLOCK_PHASE_2EDGE;
     spi_init_struct.cs_mode_selection      = SPI_CS_SOFTWARE_MODE;
@@ -353,4 +524,33 @@ static void _lcd_hw_spi_init(void)
     spi_enable(SPI2, TRUE);
     _lcd_spi_write_byte(0x00);
     _lcd_spi_wait_idle();
+}
+
+void DMA1_Channel5_IRQHandler(void)
+{
+    rt_interrupt_enter();
+
+    if (lcd_dma_async_state.active && (dma_interrupt_flag_get(LCD_DMA_DONE) == SET || dma_interrupt_flag_get(LCD_DMA_ERR) == SET)) {
+        int result                      = dma_interrupt_flag_get(LCD_DMA_ERR) == SET ? -RT_ERROR : 0;
+        drv_lcd_write_done_cb_t done_cb = lcd_dma_async_state.done_cb;
+        void *user_data                 = lcd_dma_async_state.user_data;
+
+        _lcd_spi_write_dma_stop();
+        _lcd_spi_wait_idle();
+        if (_lcd_has_cs()) {
+            pin_write(LCD_CS_PIN, 1);
+        }
+
+        lcd_dma_async_state.done_cb   = RT_NULL;
+        lcd_dma_async_state.user_data = RT_NULL;
+        lcd_dma_async_state.active    = false;
+
+        if (done_cb != RT_NULL) {
+            done_cb(user_data, result);
+        }
+    } else {
+        dma_flag_clear(LCD_DMA_CLR);
+    }
+
+    rt_interrupt_leave();
 }
