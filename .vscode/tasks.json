@@ -21,6 +21,13 @@
             "command": "cmake --build --preset debug --target clean",
             "group": "build",
             "problemMatcher": []
+        },
+        {
+            "label": "download",
+            "type": "shell",
+            "command": "jf flash ${workspaceFolder}/build/cmake/Y-Trace.hex --chip AT32F403AVGT7",
+            "dependsOn": "build",
+            "problemMatcher": []
         }
     ]
 }
