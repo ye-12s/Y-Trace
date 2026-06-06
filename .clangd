@@ -1,27 +1,3 @@
 CompileFlags:
-  Add:
-    - -Ic:\users\an\.eide\tools\xpack_gcc_arm_v10_3_1\arm-none-eabi\include\newlib-nano
-    - -Ic:\users\an\.eide\tools\xpack_gcc_arm_v10_3_1\arm-none-eabi\include\c++\10.3.1
-    - -Ic:\users\an\.eide\tools\xpack_gcc_arm_v10_3_1\arm-none-eabi\include\c++\10.3.1\arm-none-eabi\thumb\v7e-m+fp\hard
-    - -Ic:\users\an\.eide\tools\xpack_gcc_arm_v10_3_1\arm-none-eabi\include\c++\10.3.1\backward
-    - -Ic:\users\an\.eide\tools\xpack_gcc_arm_v10_3_1\lib\gcc\arm-none-eabi\10.3.1\include
-    - -Ic:\users\an\.eide\tools\xpack_gcc_arm_v10_3_1\lib\gcc\arm-none-eabi\10.3.1\include-fixed
-    - -Ic:\users\an\.eide\tools\xpack_gcc_arm_v10_3_1\arm-none-eabi\include
-    - -Inull/include
-    - -Inull/include/libcxx
-    - -Ic:\users\an\.eide\tools\gcc_arm_v9_2_1\arm-none-eabi\include\newlib-nano
-    - -Ic:\users\an\.eide\tools\gcc_arm_v9_2_1\arm-none-eabi\include\c++\9.2.1
-    - -Ic:\users\an\.eide\tools\gcc_arm_v9_2_1\arm-none-eabi\include\c++\9.2.1\arm-none-eabi\thumb\v7e-m\nofp
-    - -Ic:\users\an\.eide\tools\gcc_arm_v9_2_1\arm-none-eabi\include\c++\9.2.1\backward
-    - -Ic:\users\an\.eide\tools\gcc_arm_v9_2_1\lib\gcc\arm-none-eabi\9.2.1\include
-    - -Ic:\users\an\.eide\tools\gcc_arm_v9_2_1\lib\gcc\arm-none-eabi\9.2.1\include-fixed
-    - -Ic:\users\an\.eide\tools\gcc_arm_v9_2_1\arm-none-eabi\include
-    - -IC:\Users\An\.eide\tools\gcc_arm\arm-none-eabi\include\c++\14.3.1
-    - -IC:\Users\An\.eide\tools\gcc_arm\arm-none-eabi\include\c++\14.3.1\arm-none-eabi\thumb\v7e-m+fp\hard
-    - -IC:\Users\An\.eide\tools\gcc_arm\arm-none-eabi\include\c++\14.3.1\backward
-    - -IC:\Users\An\.eide\tools\gcc_arm\lib\gcc\arm-none-eabi\14.3.1\include
-    - -IC:\Users\An\.eide\tools\gcc_arm\lib\gcc\arm-none-eabi\14.3.1\include-fixed
-    - -IC:\Users\An\.eide\tools\gcc_arm\arm-none-eabi\include
-  Remove: []
-  CompilationDatabase: ./build/Debug
-  Compiler: C:\Users\An\.eide\tools\gcc_arm\bin\arm-none-eabi-gcc.exe
+  CompilationDatabase: build/cmake
+  Compiler: arm-none-eabi-gcc
