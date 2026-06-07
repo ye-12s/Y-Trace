@@ -35,3 +35,11 @@ target_include_directories(test_ytrace_map_tiles PRIVATE ${Y_TRACE_APP_DIR})
 target_compile_options(test_ytrace_map_tiles PRIVATE -Wall -Wextra)
 target_link_libraries(test_ytrace_map_tiles PRIVATE unity)
 add_test(NAME test_ytrace_map_tiles COMMAND test_ytrace_map_tiles)
+add_executable(test_ws2812b_driver_contract
+    test_ws2812b_driver_contract.c
+)
+target_compile_definitions(test_ws2812b_driver_contract PRIVATE Y_TRACE_WS2812B_DRIVER_PATH="${PROJECT_SOURCE_DIR}/../Board/Drivers/drv_ws2812b.c")
+target_compile_options(test_ws2812b_driver_contract PRIVATE -Wall -Wextra)
+target_link_libraries(test_ws2812b_driver_contract PRIVATE unity)
+add_test(NAME test_ws2812b_driver_contract COMMAND test_ws2812b_driver_contract)
+

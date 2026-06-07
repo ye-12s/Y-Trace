@@ -19,10 +19,23 @@
 #define WS2812B_DMA_ERR DMA1_DTERR1_FLAG
 #define WS2812B_DMA_CLR DMA1_GL1_FLAG
 
+/*
+ * Board clock config sets TMR2 on APB1 with APB1 prescaler /2.
+ * AT32 general timers count at 2x PCLK when the APB prescaler is not 1,
+ * so TMR2 runs from the 240 MHz effective timer clock.
+ */
+#define WS2812B_TMR_COUNTER_HZ 240000000ULL
+#define WS2812B_NS_PER_SECOND 1000000000ULL
+#define WS2812B_NS_TO_TICKS(ns) \
+    ((((uint64_t)(ns) * WS2812B_TMR_COUNTER_HZ) + (WS2812B_NS_PER_SECOND / 2ULL)) / WS2812B_NS_PER_SECOND)
+
 #define WS2812B_RESET_US 80U
-#define WS2812B_PWM_PERIOD 300U
-#define WS2812B_DUTY_0 90U
-#define WS2812B_DUTY_1 180U
+#define WS2812B_BIT_TOTAL_NS 1250U
+#define WS2812B_T0H_NS 375U
+#define WS2812B_T1H_NS 750U
+#define WS2812B_PWM_PERIOD ((uint16_t)WS2812B_NS_TO_TICKS(WS2812B_BIT_TOTAL_NS))
+#define WS2812B_DUTY_0 ((uint16_t)WS2812B_NS_TO_TICKS(WS2812B_T0H_NS))
+#define WS2812B_DUTY_1 ((uint16_t)WS2812B_NS_TO_TICKS(WS2812B_T1H_NS))
 #define WS2812B_BITS_PER_PIXEL 24U
 #define WS2812B_RESET_SLOTS 64U
 #define WS2812B_DMA_TIMEOUT_TICKS (RT_TICK_PER_SECOND / 10U)
@@ -49,10 +62,10 @@ static void ws2812b_timer_init(void)
     output_config.oc_idle_state = FALSE;
 
     tmr_output_channel_config(WS2812B_TMR, TMR_SELECT_CHANNEL_1, &output_config);
-    tmr_output_channel_buffer_enable(WS2812B_TMR, WS2812B_TMR_CHANNEL, FALSE);
+    tmr_output_channel_buffer_enable(WS2812B_TMR, WS2812B_TMR_CHANNEL, TRUE);
     tmr_channel_value_set(WS2812B_TMR, WS2812B_TMR_CHANNEL, 0U);
-    tmr_channel_dma_select(WS2812B_TMR, TMR_DMA_REQUEST_BY_CHANNEL);
-    tmr_dma_request_enable(WS2812B_TMR, TMR_C1_DMA_REQUEST, TRUE);
+    tmr_channel_dma_select(WS2812B_TMR, TMR_DMA_REQUEST_BY_OVERFLOW);
+    tmr_dma_request_enable(WS2812B_TMR, TMR_OVERFLOW_DMA_REQUEST, TRUE);
     tmr_channel_enable(WS2812B_TMR, WS2812B_TMR_CHANNEL, TRUE);
 }
 
