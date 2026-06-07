@@ -42,4 +42,3 @@ target_compile_definitions(test_ws2812b_driver_contract PRIVATE Y_TRACE_WS2812B_
 target_compile_options(test_ws2812b_driver_contract PRIVATE -Wall -Wextra)
 target_link_libraries(test_ws2812b_driver_contract PRIVATE unity)
 add_test(NAME test_ws2812b_driver_contract COMMAND test_ws2812b_driver_contract)
-
