@@ -117,6 +117,8 @@ typedef struct
  * @return int 0:成功, <0:失败
  */
 int drv_lsm6dsm_init(struct _soft_i2c_bus *bus);
+int drv_lsm6dsm_probe(struct _soft_i2c_bus *bus, uint8_t *addr, uint8_t *id);
+int drv_lsm6dsm_init_addr(struct _soft_i2c_bus *bus, uint8_t addr);
 
 /**
  * @brief 写LSM6DSM寄存器
@@ -127,6 +129,7 @@ int drv_lsm6dsm_init(struct _soft_i2c_bus *bus);
  * @return int 0:成功, <0:失败
  */
 int drv_lsm6dsm_write_reg(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t data);
+int drv_lsm6dsm_write_reg_addr(struct _soft_i2c_bus *bus, uint8_t addr, uint8_t reg, uint8_t data);
 
 /**
  * @brief 读LSM6DSM寄存器
@@ -137,6 +140,7 @@ int drv_lsm6dsm_write_reg(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t data);
  * @return int 0:成功, <0:失败
  */
 int drv_lsm6dsm_read_reg(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t *data);
+int drv_lsm6dsm_read_reg_addr(struct _soft_i2c_bus *bus, uint8_t addr, uint8_t reg, uint8_t *data);
 
 /**
  * @brief 读取LSM6DSM多个寄存器
@@ -148,6 +152,7 @@ int drv_lsm6dsm_read_reg(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t *data);
  * @return int 0:成功, <0:失败
  */
 int drv_lsm6dsm_read_regs(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t *data, uint8_t len);
+int drv_lsm6dsm_read_regs_addr(struct _soft_i2c_bus *bus, uint8_t addr, uint8_t reg, uint8_t *data, uint8_t len);
 
 /**
  * @brief 读取设备ID
@@ -157,6 +162,7 @@ int drv_lsm6dsm_read_regs(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t *data,
  * @return int 0:成功, <0:失败
  */
 int drv_lsm6dsm_read_id(struct _soft_i2c_bus *bus, uint8_t *id);
+int drv_lsm6dsm_read_id_addr(struct _soft_i2c_bus *bus, uint8_t addr, uint8_t *id);
 
 /**
  * @brief 读取加速度计数据
@@ -166,6 +172,7 @@ int drv_lsm6dsm_read_id(struct _soft_i2c_bus *bus, uint8_t *id);
  * @return int 0:成功, <0:失败
  */
 int drv_lsm6dsm_read_accel(struct _soft_i2c_bus *bus, lsm6dsm_accel_data_t *accel_data);
+int drv_lsm6dsm_read_accel_addr(struct _soft_i2c_bus *bus, uint8_t addr, lsm6dsm_accel_data_t *accel_data);
 
 /**
  * @brief 读取陀螺仪数据
@@ -175,6 +182,7 @@ int drv_lsm6dsm_read_accel(struct _soft_i2c_bus *bus, lsm6dsm_accel_data_t *acce
  * @return int 0:成功, <0:失败
  */
 int drv_lsm6dsm_read_gyro(struct _soft_i2c_bus *bus, lsm6dsm_gyro_data_t *gyro_data);
+int drv_lsm6dsm_read_gyro_addr(struct _soft_i2c_bus *bus, uint8_t addr, lsm6dsm_gyro_data_t *gyro_data);
 
 /**
  * @brief 读取温度数据
@@ -184,6 +192,7 @@ int drv_lsm6dsm_read_gyro(struct _soft_i2c_bus *bus, lsm6dsm_gyro_data_t *gyro_d
  * @return int 0:成功, <0:失败
  */
 int drv_lsm6dsm_read_temp(struct _soft_i2c_bus *bus, lsm6dsm_temp_data_t *temp_data);
+int drv_lsm6dsm_read_temp_addr(struct _soft_i2c_bus *bus, uint8_t addr, lsm6dsm_temp_data_t *temp_data);
 
 /**
  * @brief 设置加速度计输出数据率

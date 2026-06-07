@@ -13,6 +13,7 @@ set(Y_TRACE_SOURCES
     Board/syscall.c
     Board/Drivers/drv_flash.c
     Board/Drivers/drv_gnss.c
+    Board/Drivers/drv_imu.c
     Board/Drivers/drv_lcd.c
     Board/Drivers/drv_lis3mdltr.c
     Board/Drivers/drv_lsm6dsm.c

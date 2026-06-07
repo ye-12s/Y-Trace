@@ -45,3 +45,20 @@ target_compile_definitions(test_ws2812b_driver_contract PRIVATE
 target_compile_options(test_ws2812b_driver_contract PRIVATE -Wall -Wextra)
 target_link_libraries(test_ws2812b_driver_contract PRIVATE unity)
 add_test(NAME test_ws2812b_driver_contract COMMAND test_ws2812b_driver_contract)
+
+add_executable(test_imu_driver_contract
+    test_imu_driver_contract.c
+)
+target_compile_definitions(test_imu_driver_contract PRIVATE
+    Y_TRACE_LSM6DSM_HEADER_PATH="${PROJECT_SOURCE_DIR}/../Board/Drivers/drv_lsm6dsm.h"
+    Y_TRACE_LSM6DSM_SOURCE_PATH="${PROJECT_SOURCE_DIR}/../Board/Drivers/drv_lsm6dsm.c"
+    Y_TRACE_LIS3MDL_HEADER_PATH="${PROJECT_SOURCE_DIR}/../Board/Drivers/drv_lis3mdltr.h"
+    Y_TRACE_LIS3MDL_SOURCE_PATH="${PROJECT_SOURCE_DIR}/../Board/Drivers/drv_lis3mdltr.c"
+    Y_TRACE_IMU_HEADER_PATH="${PROJECT_SOURCE_DIR}/../Board/Drivers/drv_imu.h"
+    Y_TRACE_IMU_SOURCE_PATH="${PROJECT_SOURCE_DIR}/../Board/Drivers/drv_imu.c"
+    Y_TRACE_APP_INIT_PATH="${PROJECT_SOURCE_DIR}/../Application/app_init.c"
+    Y_TRACE_CMAKE_SOURCES_PATH="${PROJECT_SOURCE_DIR}/../cmake/sources.cmake"
+    Y_TRACE_CMAKE_OPTIONS_PATH="${PROJECT_SOURCE_DIR}/../cmake/options.cmake")
+target_compile_options(test_imu_driver_contract PRIVATE -Wall -Wextra)
+target_link_libraries(test_imu_driver_contract PRIVATE unity)
+add_test(NAME test_imu_driver_contract COMMAND test_imu_driver_contract)

@@ -1,6 +1,8 @@
 option(Y_TRACE_ENABLE_LVGL "Build and start the LVGL UI path" ON)
 option(Y_TRACE_ENABLE_FATFS_SD_BENCH "Build the destructive SD-card FatFs smoke/benchmark MSH command" ON)
 option(Y_TRACE_FATFS_SD_BENCH_AUTORUN "Autorun the destructive FatFs SD-card benchmark at boot for lab measurement" OFF)
+option(Y_TRACE_IMU_TEST_AUTORUN "Autorun the non-destructive IMU service smoke test at boot for lab measurement" OFF)
+option(Y_TRACE_IMU_MONITOR_AUTORUN "Autorun continuous IMU monitor output at boot for lab measurement" OFF)
 
 set(Y_TRACE_DEFINES
     _DEBUG
@@ -40,6 +42,18 @@ if(Y_TRACE_FATFS_SD_BENCH_AUTORUN)
     list(APPEND Y_TRACE_DEFINES
         Y_TRACE_FATFS_SD_BENCH_AUTORUN
         Y_TRACE_RTT_UP_BUFFER_SIZE=16384U
+    )
+endif()
+
+if(Y_TRACE_IMU_TEST_AUTORUN)
+    list(APPEND Y_TRACE_DEFINES
+        Y_TRACE_IMU_TEST_AUTORUN
+    )
+endif()
+
+if(Y_TRACE_IMU_MONITOR_AUTORUN)
+    list(APPEND Y_TRACE_DEFINES
+        Y_TRACE_IMU_MONITOR_AUTORUN
     )
 endif()
 

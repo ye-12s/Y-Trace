@@ -1,4 +1,5 @@
 #include "Drivers/drv_pin.h"
+#include "Drivers/drv_imu.h"
 #include "Drivers/drv_lcd.h"
 #include "Drivers/drv_soft_iic.h"
 #include "Drivers/drv_ws2812b.h"
@@ -14,8 +15,10 @@
 #include "ulog.h"
 
 static struct _soft_i2c_bus sensor_i2c_bus;
-static const pin_t PIN_SENSOR_I2C_SCL = GET_PIN(A, 8);
-static const pin_t PIN_SENSOR_I2C_SDA = GET_PIN(C, 9);
+static const pin_t PIN_SENSOR_I2C_SCL  = GET_PIN(A, 8);
+static const pin_t PIN_SENSOR_I2C_SDA  = GET_PIN(C, 9);
+static const pin_t PIN_SENSOR_IMU_INT1 = GET_PIN(C, 7);
+static const pin_t PIN_SENSOR_IMU_INT2 = GET_PIN(C, 8);
 
 #define WS2812B_COLOR_STEP_MS 1000U
 
@@ -64,6 +67,11 @@ static int app_ws2812b_liuli_start(void)
 static int bsp_init(void)
 {
     drv_soft_i2c_init(&sensor_i2c_bus, PIN_SENSOR_I2C_SCL, PIN_SENSOR_I2C_SDA, 100, 1000);
+    int result = drv_imu_bind(&sensor_i2c_bus, PIN_SENSOR_IMU_INT1, PIN_SENSOR_IMU_INT2);
+    if (result != 0) {
+        LOG_E("IMU service bind failed: %d", result);
+        return result;
+    }
     (void)drv_ws2812b_init();
     return 0;
 }

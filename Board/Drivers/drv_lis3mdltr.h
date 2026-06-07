@@ -9,7 +9,9 @@ extern "C" {
 #include "drv_soft_iic.h"
 
 /* LIS3MDLTR I2C 地址 */
-#define LIS3MDLTR_I2C_ADDR      0x1C
+#define LIS3MDLTR_I2C_ADDR_LOW  0x1C
+#define LIS3MDLTR_I2C_ADDR_HIGH 0x1E
+#define LIS3MDLTR_I2C_ADDR      LIS3MDLTR_I2C_ADDR_LOW
 
 /* LIS3MDLTR 寄存器地址 */
 #define LIS3MDLTR_WHO_AM_I      0x0F  // 设备ID寄存器
@@ -18,6 +20,7 @@ extern "C" {
 #define LIS3MDLTR_CTRL_REG3     0x22  // 控制寄存器3
 #define LIS3MDLTR_CTRL_REG4     0x23  // 控制寄存器4
 #define LIS3MDLTR_CTRL_REG5     0x24  // 控制寄存器5
+#define LIS3MDLTR_CTRL_REG5_BDU 0x40  // 块数据更新
 #define LIS3MDLTR_STATUS_REG    0x27  // 状态寄存器
 #define LIS3MDLTR_OUT_X_L       0x28  // X轴低字节
 #define LIS3MDLTR_OUT_X_H       0x29  // X轴高字节
@@ -73,6 +76,8 @@ typedef struct
  * @return int 0:成功, <0:失败
  */
 int drv_lis3mdltr_init(struct _soft_i2c_bus *bus);
+int drv_lis3mdltr_probe(struct _soft_i2c_bus *bus, uint8_t *addr, uint8_t *id);
+int drv_lis3mdltr_init_addr(struct _soft_i2c_bus *bus, uint8_t addr);
 
 /**
  * @brief 写LIS3MDLTR寄存器
@@ -83,6 +88,7 @@ int drv_lis3mdltr_init(struct _soft_i2c_bus *bus);
  * @return int 0:成功, <0:失败
  */
 int drv_lis3mdltr_write_reg(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t data);
+int drv_lis3mdltr_write_reg_addr(struct _soft_i2c_bus *bus, uint8_t addr, uint8_t reg, uint8_t data);
 
 /**
  * @brief 读LIS3MDLTR寄存器
@@ -93,6 +99,7 @@ int drv_lis3mdltr_write_reg(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t data
  * @return int 0:成功, <0:失败
  */
 int drv_lis3mdltr_read_reg(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t *data);
+int drv_lis3mdltr_read_reg_addr(struct _soft_i2c_bus *bus, uint8_t addr, uint8_t reg, uint8_t *data);
 
 /**
  * @brief 读取LIS3MDLTR多个寄存器
@@ -104,6 +111,7 @@ int drv_lis3mdltr_read_reg(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t *data
  * @return int 0:成功, <0:失败
  */
 int drv_lis3mdltr_read_regs(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t *data, uint8_t len);
+int drv_lis3mdltr_read_regs_addr(struct _soft_i2c_bus *bus, uint8_t addr, uint8_t reg, uint8_t *data, uint8_t len);
 
 /**
  * @brief 读取设备ID
@@ -113,6 +121,7 @@ int drv_lis3mdltr_read_regs(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t *dat
  * @return int 0:成功, <0:失败
  */
 int drv_lis3mdltr_read_id(struct _soft_i2c_bus *bus, uint8_t *id);
+int drv_lis3mdltr_read_id_addr(struct _soft_i2c_bus *bus, uint8_t addr, uint8_t *id);
 
 /**
  * @brief 读取磁力计数据
@@ -122,6 +131,7 @@ int drv_lis3mdltr_read_id(struct _soft_i2c_bus *bus, uint8_t *id);
  * @return int 0:成功, <0:失败
  */
 int drv_lis3mdltr_read_mag(struct _soft_i2c_bus *bus, lis3mdltr_mag_data_t *mag_data);
+int drv_lis3mdltr_read_mag_addr(struct _soft_i2c_bus *bus, uint8_t addr, lis3mdltr_mag_data_t *mag_data);
 
 /**
  * @brief 读取温度数据
@@ -131,6 +141,7 @@ int drv_lis3mdltr_read_mag(struct _soft_i2c_bus *bus, lis3mdltr_mag_data_t *mag_
  * @return int 0:成功, <0:失败
  */
 int drv_lis3mdltr_read_temp(struct _soft_i2c_bus *bus, lis3mdltr_temp_data_t *temp_data);
+int drv_lis3mdltr_read_temp_addr(struct _soft_i2c_bus *bus, uint8_t addr, lis3mdltr_temp_data_t *temp_data);
 
 /**
  * @brief 设置工作模式

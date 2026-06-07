@@ -2,6 +2,11 @@
 #include "drv_soft_iic.h"
 #include <rtthread.h>
 
+static const uint8_t lis3mdltr_addr_candidates[] = {
+    LIS3MDLTR_I2C_ADDR_LOW,
+    LIS3MDLTR_I2C_ADDR_HIGH,
+};
+
 /**
  * @brief 写LIS3MDLTR寄存器
  * 
@@ -11,6 +16,11 @@
  * @return int 0:成功, <0:失败
  */
 int drv_lis3mdltr_write_reg(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t data)
+{
+    return drv_lis3mdltr_write_reg_addr(bus, LIS3MDLTR_I2C_ADDR, reg, data);
+}
+
+int drv_lis3mdltr_write_reg_addr(struct _soft_i2c_bus *bus, uint8_t addr, uint8_t reg, uint8_t data)
 {
     uint8_t buf[2];
     int ret;
@@ -23,7 +33,7 @@ int drv_lis3mdltr_write_reg(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t data
     buf[0] = reg;
     buf[1] = data;
     
-    ret = drv_soft_i2c_master_send(bus, LIS3MDLTR_I2C_ADDR, I2C_FLAG_WR, buf, 2);
+    ret = drv_soft_i2c_master_send(bus, addr, I2C_FLAG_WR, buf, 2);
     
     return (ret == 2) ? 0 : -1;
 }
@@ -38,6 +48,11 @@ int drv_lis3mdltr_write_reg(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t data
  */
 int drv_lis3mdltr_read_reg(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t *data)
 {
+    return drv_lis3mdltr_read_reg_addr(bus, LIS3MDLTR_I2C_ADDR, reg, data);
+}
+
+int drv_lis3mdltr_read_reg_addr(struct _soft_i2c_bus *bus, uint8_t addr, uint8_t reg, uint8_t *data)
+{
     int ret;
     
     if (!bus || !data)
@@ -46,14 +61,14 @@ int drv_lis3mdltr_read_reg(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t *data
     }
     
     /* 先写寄存器地址 */
-    ret = drv_soft_i2c_master_send(bus, LIS3MDLTR_I2C_ADDR, I2C_FLAG_WR, &reg, 1);
+    ret = drv_soft_i2c_master_send(bus, addr, I2C_FLAG_WR, &reg, 1);
     if (ret != 1)
     {
         return -1;
     }
     
     /* 再读取数据 */
-    ret = drv_soft_i2c_master_recv(bus, LIS3MDLTR_I2C_ADDR, I2C_FLAG_RD, data, 1);
+    ret = drv_soft_i2c_master_recv(bus, addr, I2C_FLAG_RD, data, 1);
     
     return (ret == 1) ? 0 : -1;
 }
@@ -69,6 +84,11 @@ int drv_lis3mdltr_read_reg(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t *data
  */
 int drv_lis3mdltr_read_regs(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t *data, uint8_t len)
 {
+    return drv_lis3mdltr_read_regs_addr(bus, LIS3MDLTR_I2C_ADDR, reg, data, len);
+}
+
+int drv_lis3mdltr_read_regs_addr(struct _soft_i2c_bus *bus, uint8_t addr, uint8_t reg, uint8_t *data, uint8_t len)
+{
     int ret;
     
     if (!bus || !data || len == 0)
@@ -80,14 +100,14 @@ int drv_lis3mdltr_read_regs(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t *dat
     reg |= 0x80;
     
     /* 先写寄存器地址 */
-    ret = drv_soft_i2c_master_send(bus, LIS3MDLTR_I2C_ADDR, I2C_FLAG_WR, &reg, 1);
+    ret = drv_soft_i2c_master_send(bus, addr, I2C_FLAG_WR, &reg, 1);
     if (ret != 1)
     {
         return -1;
     }
     
     /* 再读取多个数据 */
-    ret = drv_soft_i2c_master_recv(bus, LIS3MDLTR_I2C_ADDR, I2C_FLAG_RD, data, len);
+    ret = drv_soft_i2c_master_recv(bus, addr, I2C_FLAG_RD, data, len);
     
     return (ret == len) ? 0 : -1;
 }
@@ -104,6 +124,39 @@ int drv_lis3mdltr_read_id(struct _soft_i2c_bus *bus, uint8_t *id)
     return drv_lis3mdltr_read_reg(bus, LIS3MDLTR_WHO_AM_I, id);
 }
 
+int drv_lis3mdltr_read_id_addr(struct _soft_i2c_bus *bus, uint8_t addr, uint8_t *id)
+{
+    return drv_lis3mdltr_read_reg_addr(bus, addr, LIS3MDLTR_WHO_AM_I, id);
+}
+
+int drv_lis3mdltr_probe(struct _soft_i2c_bus *bus, uint8_t *addr, uint8_t *id)
+{
+    if (!bus)
+    {
+        return -1;
+    }
+
+    for (uint32_t index = 0; index < sizeof(lis3mdltr_addr_candidates); index++)
+    {
+        uint8_t candidate_id = 0;
+        uint8_t candidate_addr = lis3mdltr_addr_candidates[index];
+        if (drv_lis3mdltr_read_id_addr(bus, candidate_addr, &candidate_id) == 0 && candidate_id == LIS3MDLTR_ID)
+        {
+            if (addr)
+            {
+                *addr = candidate_addr;
+            }
+            if (id)
+            {
+                *id = candidate_id;
+            }
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
 /**
  * @brief 读取磁力计数据
  * 
@@ -112,6 +165,11 @@ int drv_lis3mdltr_read_id(struct _soft_i2c_bus *bus, uint8_t *id)
  * @return int 0:成功, <0:失败
  */
 int drv_lis3mdltr_read_mag(struct _soft_i2c_bus *bus, lis3mdltr_mag_data_t *mag_data)
+{
+    return drv_lis3mdltr_read_mag_addr(bus, LIS3MDLTR_I2C_ADDR, mag_data);
+}
+
+int drv_lis3mdltr_read_mag_addr(struct _soft_i2c_bus *bus, uint8_t addr, lis3mdltr_mag_data_t *mag_data)
 {
     uint8_t buf[6];
     int ret;
@@ -122,7 +180,7 @@ int drv_lis3mdltr_read_mag(struct _soft_i2c_bus *bus, lis3mdltr_mag_data_t *mag_
     }
     
     /* 从OUT_X_L开始连续读取6个字节 */
-    ret = drv_lis3mdltr_read_regs(bus, LIS3MDLTR_OUT_X_L, buf, 6);
+    ret = drv_lis3mdltr_read_regs_addr(bus, addr, LIS3MDLTR_OUT_X_L, buf, 6);
     if (ret != 0)
     {
         return ret;
@@ -145,6 +203,11 @@ int drv_lis3mdltr_read_mag(struct _soft_i2c_bus *bus, lis3mdltr_mag_data_t *mag_
  */
 int drv_lis3mdltr_read_temp(struct _soft_i2c_bus *bus, lis3mdltr_temp_data_t *temp_data)
 {
+    return drv_lis3mdltr_read_temp_addr(bus, LIS3MDLTR_I2C_ADDR, temp_data);
+}
+
+int drv_lis3mdltr_read_temp_addr(struct _soft_i2c_bus *bus, uint8_t addr, lis3mdltr_temp_data_t *temp_data)
+{
     uint8_t buf[2];
     int ret;
     
@@ -154,7 +217,7 @@ int drv_lis3mdltr_read_temp(struct _soft_i2c_bus *bus, lis3mdltr_temp_data_t *te
     }
     
     /* 从TEMP_OUT_L开始连续读取2个字节 */
-    ret = drv_lis3mdltr_read_regs(bus, LIS3MDLTR_TEMP_OUT_L, buf, 2);
+    ret = drv_lis3mdltr_read_regs_addr(bus, addr, LIS3MDLTR_TEMP_OUT_L, buf, 2);
     if (ret != 0)
     {
         return ret;
@@ -270,6 +333,11 @@ int drv_lis3mdltr_set_fullscale(struct _soft_i2c_bus *bus, uint8_t fs)
  */
 int drv_lis3mdltr_init(struct _soft_i2c_bus *bus)
 {
+    return drv_lis3mdltr_init_addr(bus, LIS3MDLTR_I2C_ADDR);
+}
+
+int drv_lis3mdltr_init_addr(struct _soft_i2c_bus *bus, uint8_t addr)
+{
     uint8_t id = 0;
     int ret;
     
@@ -279,7 +347,7 @@ int drv_lis3mdltr_init(struct _soft_i2c_bus *bus)
     }
     
     /* 读取并验证设备ID */
-    ret = drv_lis3mdltr_read_id(bus, &id);
+    ret = drv_lis3mdltr_read_id_addr(bus, addr, &id);
     if (ret != 0)
     {
         rt_kprintf("LIS3MDLTR: Failed to read device ID\n");
@@ -295,7 +363,7 @@ int drv_lis3mdltr_init(struct _soft_i2c_bus *bus)
     rt_kprintf("LIS3MDLTR: Device ID verified: 0x%02X\n", id);
     
     /* 配置CTRL_REG1: 使能温度传感器，设置输出数据率为10Hz，高性能模式 */
-    ret = drv_lis3mdltr_write_reg(bus, LIS3MDLTR_CTRL_REG1, 0x90 | LIS3MDLTR_ODR_10HZ);
+    ret = drv_lis3mdltr_write_reg_addr(bus, addr, LIS3MDLTR_CTRL_REG1, 0x90 | LIS3MDLTR_ODR_10HZ);
     if (ret != 0)
     {
         rt_kprintf("LIS3MDLTR: Failed to configure CTRL_REG1\n");
@@ -303,7 +371,7 @@ int drv_lis3mdltr_init(struct _soft_i2c_bus *bus)
     }
     
     /* 配置CTRL_REG2: 设置量程为±4 Gauss */
-    ret = drv_lis3mdltr_write_reg(bus, LIS3MDLTR_CTRL_REG2, LIS3MDLTR_FS_4GAUSS);
+    ret = drv_lis3mdltr_write_reg_addr(bus, addr, LIS3MDLTR_CTRL_REG2, LIS3MDLTR_FS_4GAUSS);
     if (ret != 0)
     {
         rt_kprintf("LIS3MDLTR: Failed to configure CTRL_REG2\n");
@@ -311,7 +379,7 @@ int drv_lis3mdltr_init(struct _soft_i2c_bus *bus)
     }
     
     /* 配置CTRL_REG3: 设置为连续测量模式 */
-    ret = drv_lis3mdltr_write_reg(bus, LIS3MDLTR_CTRL_REG3, LIS3MDLTR_MODE_CONTINUOUS);
+    ret = drv_lis3mdltr_write_reg_addr(bus, addr, LIS3MDLTR_CTRL_REG3, LIS3MDLTR_MODE_CONTINUOUS);
     if (ret != 0)
     {
         rt_kprintf("LIS3MDLTR: Failed to configure CTRL_REG3\n");
@@ -319,15 +387,15 @@ int drv_lis3mdltr_init(struct _soft_i2c_bus *bus)
     }
     
     /* 配置CTRL_REG4: Z轴高性能模式 */
-    ret = drv_lis3mdltr_write_reg(bus, LIS3MDLTR_CTRL_REG4, 0x08);
+    ret = drv_lis3mdltr_write_reg_addr(bus, addr, LIS3MDLTR_CTRL_REG4, 0x08);
     if (ret != 0)
     {
         rt_kprintf("LIS3MDLTR: Failed to configure CTRL_REG4\n");
         return -1;
     }
     
-    /* 配置CTRL_REG5: 连续更新模式（BDU=0） */
-    ret = drv_lis3mdltr_write_reg(bus, LIS3MDLTR_CTRL_REG5, 0x00);
+    /* 配置CTRL_REG5: BDU=1，避免多字节轮询读取时数据更新造成轴数据不一致 */
+    ret = drv_lis3mdltr_write_reg_addr(bus, addr, LIS3MDLTR_CTRL_REG5, LIS3MDLTR_CTRL_REG5_BDU);
     if (ret != 0)
     {
         rt_kprintf("LIS3MDLTR: Failed to configure CTRL_REG5\n");
@@ -338,4 +406,3 @@ int drv_lis3mdltr_init(struct _soft_i2c_bus *bus)
     
     return 0;
 }
-

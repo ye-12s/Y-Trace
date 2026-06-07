@@ -6,6 +6,11 @@
 #define LOG_LVL LOG_LVL_DBG
 #include "ulog.h"
 
+static const uint8_t lsm6dsm_addr_candidates[] = {
+    LSM6DSM_I2C_ADDR_LOW,
+    LSM6DSM_I2C_ADDR_HIGH,
+};
+
 /**
  * @brief 写LSM6DSM寄存器
  *
@@ -15,6 +20,11 @@
  * @return int 0:成功, <0:失败
  */
 int drv_lsm6dsm_write_reg(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t data)
+{
+    return drv_lsm6dsm_write_reg_addr(bus, LSM6DSM_I2C_ADDR, reg, data);
+}
+
+int drv_lsm6dsm_write_reg_addr(struct _soft_i2c_bus *bus, uint8_t addr, uint8_t reg, uint8_t data)
 {
     uint8_t buf[2];
     int ret;
@@ -27,7 +37,7 @@ int drv_lsm6dsm_write_reg(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t data)
     buf[0] = reg;
     buf[1] = data;
 
-    ret = drv_soft_i2c_master_send(bus, LSM6DSM_I2C_ADDR, I2C_FLAG_WR, buf, 2);
+    ret = drv_soft_i2c_master_send(bus, addr, I2C_FLAG_WR, buf, 2);
 
     return (ret == 2) ? 0 : -1;
 }
@@ -42,6 +52,11 @@ int drv_lsm6dsm_write_reg(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t data)
  */
 int drv_lsm6dsm_read_reg(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t *data)
 {
+    return drv_lsm6dsm_read_reg_addr(bus, LSM6DSM_I2C_ADDR, reg, data);
+}
+
+int drv_lsm6dsm_read_reg_addr(struct _soft_i2c_bus *bus, uint8_t addr, uint8_t reg, uint8_t *data)
+{
     int ret;
 
     if (!bus || !data)
@@ -50,14 +65,14 @@ int drv_lsm6dsm_read_reg(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t *data)
     }
 
     /* 先写寄存器地址 */
-    ret = drv_soft_i2c_master_send(bus, LSM6DSM_I2C_ADDR, I2C_FLAG_WR, &reg, 1);
+    ret = drv_soft_i2c_master_send(bus, addr, I2C_FLAG_WR, &reg, 1);
     if (ret != 1)
     {
         return -1;
     }
 
     /* 再读取数据 */
-    ret = drv_soft_i2c_master_recv(bus, LSM6DSM_I2C_ADDR, I2C_FLAG_RD, data, 1);
+    ret = drv_soft_i2c_master_recv(bus, addr, I2C_FLAG_RD, data, 1);
 
     return (ret == 1) ? 0 : -1;
 }
@@ -73,6 +88,11 @@ int drv_lsm6dsm_read_reg(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t *data)
  */
 int drv_lsm6dsm_read_regs(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t *data, uint8_t len)
 {
+    return drv_lsm6dsm_read_regs_addr(bus, LSM6DSM_I2C_ADDR, reg, data, len);
+}
+
+int drv_lsm6dsm_read_regs_addr(struct _soft_i2c_bus *bus, uint8_t addr, uint8_t reg, uint8_t *data, uint8_t len)
+{
     int ret;
 
     if (!bus || !data || len == 0)
@@ -83,14 +103,14 @@ int drv_lsm6dsm_read_regs(struct _soft_i2c_bus *bus, uint8_t reg, uint8_t *data,
     /* 注意：CTRL3_C中已配置IF_INC=1（自动地址递增），不需要在地址上加0x80 */
 
     /* 先写寄存器地址 */
-    ret = drv_soft_i2c_master_send(bus, LSM6DSM_I2C_ADDR, I2C_FLAG_WR, &reg, 1);
+    ret = drv_soft_i2c_master_send(bus, addr, I2C_FLAG_WR, &reg, 1);
     if (ret != 1)
     {
         return -1;
     }
 
     /* 再读取多个数据 */
-    ret = drv_soft_i2c_master_recv(bus, LSM6DSM_I2C_ADDR, I2C_FLAG_RD, data, len);
+    ret = drv_soft_i2c_master_recv(bus, addr, I2C_FLAG_RD, data, len);
 
     return (ret == len) ? 0 : -1;
 }
@@ -107,6 +127,39 @@ int drv_lsm6dsm_read_id(struct _soft_i2c_bus *bus, uint8_t *id)
     return drv_lsm6dsm_read_reg(bus, LSM6DSM_WHO_AM_I, id);
 }
 
+int drv_lsm6dsm_read_id_addr(struct _soft_i2c_bus *bus, uint8_t addr, uint8_t *id)
+{
+    return drv_lsm6dsm_read_reg_addr(bus, addr, LSM6DSM_WHO_AM_I, id);
+}
+
+int drv_lsm6dsm_probe(struct _soft_i2c_bus *bus, uint8_t *addr, uint8_t *id)
+{
+    if (!bus)
+    {
+        return -1;
+    }
+
+    for (uint32_t index = 0; index < sizeof(lsm6dsm_addr_candidates); index++)
+    {
+        uint8_t candidate_id = 0;
+        uint8_t candidate_addr = lsm6dsm_addr_candidates[index];
+        if (drv_lsm6dsm_read_id_addr(bus, candidate_addr, &candidate_id) == 0 && candidate_id == LSM6DSM_ID)
+        {
+            if (addr)
+            {
+                *addr = candidate_addr;
+            }
+            if (id)
+            {
+                *id = candidate_id;
+            }
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
 /**
  * @brief 读取加速度计数据
  *
@@ -115,6 +168,11 @@ int drv_lsm6dsm_read_id(struct _soft_i2c_bus *bus, uint8_t *id)
  * @return int 0:成功, <0:失败
  */
 int drv_lsm6dsm_read_accel(struct _soft_i2c_bus *bus, lsm6dsm_accel_data_t *accel_data)
+{
+    return drv_lsm6dsm_read_accel_addr(bus, LSM6DSM_I2C_ADDR, accel_data);
+}
+
+int drv_lsm6dsm_read_accel_addr(struct _soft_i2c_bus *bus, uint8_t addr, lsm6dsm_accel_data_t *accel_data)
 {
     uint8_t buf[6];
     int ret;
@@ -125,7 +183,7 @@ int drv_lsm6dsm_read_accel(struct _soft_i2c_bus *bus, lsm6dsm_accel_data_t *acce
     }
 
     /* 从OUTX_L_XL开始连续读取6个字节 */
-    ret = drv_lsm6dsm_read_regs(bus, LSM6DSM_OUTX_L_XL, buf, 6);
+    ret = drv_lsm6dsm_read_regs_addr(bus, addr, LSM6DSM_OUTX_L_XL, buf, 6);
     if (ret != 0)
     {
         return ret;
@@ -148,6 +206,11 @@ int drv_lsm6dsm_read_accel(struct _soft_i2c_bus *bus, lsm6dsm_accel_data_t *acce
  */
 int drv_lsm6dsm_read_gyro(struct _soft_i2c_bus *bus, lsm6dsm_gyro_data_t *gyro_data)
 {
+    return drv_lsm6dsm_read_gyro_addr(bus, LSM6DSM_I2C_ADDR, gyro_data);
+}
+
+int drv_lsm6dsm_read_gyro_addr(struct _soft_i2c_bus *bus, uint8_t addr, lsm6dsm_gyro_data_t *gyro_data)
+{
     uint8_t buf[6];
     int ret;
 
@@ -157,7 +220,7 @@ int drv_lsm6dsm_read_gyro(struct _soft_i2c_bus *bus, lsm6dsm_gyro_data_t *gyro_d
     }
 
     /* 从OUTX_L_G开始连续读取6个字节 */
-    ret = drv_lsm6dsm_read_regs(bus, LSM6DSM_OUTX_L_G, buf, 6);
+    ret = drv_lsm6dsm_read_regs_addr(bus, addr, LSM6DSM_OUTX_L_G, buf, 6);
     if (ret != 0)
     {
         return ret;
@@ -180,6 +243,11 @@ int drv_lsm6dsm_read_gyro(struct _soft_i2c_bus *bus, lsm6dsm_gyro_data_t *gyro_d
  */
 int drv_lsm6dsm_read_temp(struct _soft_i2c_bus *bus, lsm6dsm_temp_data_t *temp_data)
 {
+    return drv_lsm6dsm_read_temp_addr(bus, LSM6DSM_I2C_ADDR, temp_data);
+}
+
+int drv_lsm6dsm_read_temp_addr(struct _soft_i2c_bus *bus, uint8_t addr, lsm6dsm_temp_data_t *temp_data)
+{
     uint8_t buf[2];
     int ret;
 
@@ -189,7 +257,7 @@ int drv_lsm6dsm_read_temp(struct _soft_i2c_bus *bus, lsm6dsm_temp_data_t *temp_d
     }
 
     /* 从OUT_TEMP_L开始连续读取2个字节 */
-    ret = drv_lsm6dsm_read_regs(bus, LSM6DSM_OUT_TEMP_L, buf, 2);
+    ret = drv_lsm6dsm_read_regs_addr(bus, addr, LSM6DSM_OUT_TEMP_L, buf, 2);
     if (ret != 0)
     {
         return ret;
@@ -337,6 +405,11 @@ int drv_lsm6dsm_set_gyro_fullscale(struct _soft_i2c_bus *bus, uint8_t fs)
  */
 int drv_lsm6dsm_init(struct _soft_i2c_bus *bus)
 {
+    return drv_lsm6dsm_init_addr(bus, LSM6DSM_I2C_ADDR);
+}
+
+int drv_lsm6dsm_init_addr(struct _soft_i2c_bus *bus, uint8_t addr)
+{
     uint8_t id = 0;
     int ret;
 
@@ -346,7 +419,7 @@ int drv_lsm6dsm_init(struct _soft_i2c_bus *bus)
     }
 
     /* 读取并验证设备ID */
-    ret = drv_lsm6dsm_read_id(bus, &id);
+    ret = drv_lsm6dsm_read_id_addr(bus, addr, &id);
     if (ret != 0)
     {
         LOG_E("LSM6DSM: Failed to read device ID");
@@ -361,7 +434,7 @@ int drv_lsm6dsm_init(struct _soft_i2c_bus *bus)
 
     LOG_I("LSM6DSM: Device ID verified: 0x%02X", id);
     /* 软复位 */
-    ret = drv_lsm6dsm_write_reg(bus, LSM6DSM_CTRL3_C, 0x01);
+    ret = drv_lsm6dsm_write_reg_addr(bus, addr, LSM6DSM_CTRL3_C, 0x01);
     if (ret != 0)
     {
         LOG_E("LSM6DSM: Failed to perform soft reset");
@@ -372,7 +445,7 @@ int drv_lsm6dsm_init(struct _soft_i2c_bus *bus)
     rt_thread_mdelay(10);
 
     /* 配置CTRL3_C: 使能BDU(块数据更新)和自动地址递增 */
-    ret = drv_lsm6dsm_write_reg(bus, LSM6DSM_CTRL3_C, 0x44);
+    ret = drv_lsm6dsm_write_reg_addr(bus, addr, LSM6DSM_CTRL3_C, 0x44);
     if (ret != 0)
     {
         LOG_E("LSM6DSM: Failed to configure CTRL3_C");
@@ -380,7 +453,7 @@ int drv_lsm6dsm_init(struct _soft_i2c_bus *bus)
     }
 
     /* 配置CTRL1_XL: 加速度计ODR=104Hz, FS=±2g */
-    ret = drv_lsm6dsm_write_reg(bus, LSM6DSM_CTRL1_XL, LSM6DSM_XL_ODR_104HZ | LSM6DSM_XL_FS_2G);
+    ret = drv_lsm6dsm_write_reg_addr(bus, addr, LSM6DSM_CTRL1_XL, LSM6DSM_XL_ODR_104HZ | LSM6DSM_XL_FS_2G);
     if (ret != 0)
     {
         LOG_E("LSM6DSM: Failed to configure CTRL1_XL");
@@ -388,7 +461,7 @@ int drv_lsm6dsm_init(struct _soft_i2c_bus *bus)
     }
 
     /* 配置CTRL2_G: 陀螺仪ODR=104Hz, FS=250dps */
-    ret = drv_lsm6dsm_write_reg(bus, LSM6DSM_CTRL2_G, LSM6DSM_G_ODR_104HZ | LSM6DSM_G_FS_250DPS);
+    ret = drv_lsm6dsm_write_reg_addr(bus, addr, LSM6DSM_CTRL2_G, LSM6DSM_G_ODR_104HZ | LSM6DSM_G_FS_250DPS);
     if (ret != 0)
     {
         LOG_E("LSM6DSM: Failed to configure CTRL2_G");
@@ -396,7 +469,7 @@ int drv_lsm6dsm_init(struct _soft_i2c_bus *bus)
     }
 
     /* 配置CTRL4_C: 禁用I2C接口 */
-    ret = drv_lsm6dsm_write_reg(bus, LSM6DSM_CTRL4_C, 0x00);
+    ret = drv_lsm6dsm_write_reg_addr(bus, addr, LSM6DSM_CTRL4_C, 0x00);
     if (ret != 0)
     {
         LOG_E("LSM6DSM: Failed to configure CTRL4_C");
@@ -404,7 +477,7 @@ int drv_lsm6dsm_init(struct _soft_i2c_bus *bus)
     }
 
     /* 配置CTRL5_C: 加速度计和陀螺仪自测禁用，舍入禁用 */
-    ret = drv_lsm6dsm_write_reg(bus, LSM6DSM_CTRL5_C, 0x00);
+    ret = drv_lsm6dsm_write_reg_addr(bus, addr, LSM6DSM_CTRL5_C, 0x00);
     if (ret != 0)
     {
         LOG_E("LSM6DSM: Failed to configure CTRL5_C");
@@ -412,7 +485,7 @@ int drv_lsm6dsm_init(struct _soft_i2c_bus *bus)
     }
 
     /* 配置CTRL6_C: 陀螺仪高性能模式 */
-    ret = drv_lsm6dsm_write_reg(bus, LSM6DSM_CTRL6_C, 0x00);
+    ret = drv_lsm6dsm_write_reg_addr(bus, addr, LSM6DSM_CTRL6_C, 0x00);
     if (ret != 0)
     {
         LOG_E("LSM6DSM: Failed to configure CTRL6_C");
@@ -420,7 +493,7 @@ int drv_lsm6dsm_init(struct _soft_i2c_bus *bus)
     }
 
     /* 配置CTRL7_G: 陀螺仪高性能模式，高通滤波器禁用 */
-    ret = drv_lsm6dsm_write_reg(bus, LSM6DSM_CTRL7_G, 0x00);
+    ret = drv_lsm6dsm_write_reg_addr(bus, addr, LSM6DSM_CTRL7_G, 0x00);
     if (ret != 0)
     {
         LOG_E("LSM6DSM: Failed to configure CTRL7_G");
@@ -428,7 +501,7 @@ int drv_lsm6dsm_init(struct _soft_i2c_bus *bus)
     }
 
     /* 配置CTRL8_XL: 加速度计低通滤波器 */
-    ret = drv_lsm6dsm_write_reg(bus, LSM6DSM_CTRL8_XL, 0x00);
+    ret = drv_lsm6dsm_write_reg_addr(bus, addr, LSM6DSM_CTRL8_XL, 0x00);
     if (ret != 0)
     {
         LOG_E("LSM6DSM: Failed to configure CTRL8_XL");
@@ -436,7 +509,7 @@ int drv_lsm6dsm_init(struct _soft_i2c_bus *bus)
     }
 
     /* 配置CTRL9_XL: 使能加速度计X/Y/Z轴 (bit 3-5 = 0表示使能) */
-    ret = drv_lsm6dsm_write_reg(bus, LSM6DSM_CTRL9_XL, 0x00);
+    ret = drv_lsm6dsm_write_reg_addr(bus, addr, LSM6DSM_CTRL9_XL, 0x00);
     if (ret != 0)
     {
         LOG_E("LSM6DSM: Failed to configure CTRL9_XL");
@@ -444,7 +517,7 @@ int drv_lsm6dsm_init(struct _soft_i2c_bus *bus)
     }
 
     /* 配置CTRL10_C: 使能时间戳和功能 */
-    ret = drv_lsm6dsm_write_reg(bus, LSM6DSM_CTRL10_C, 0x00);
+    ret = drv_lsm6dsm_write_reg_addr(bus, addr, LSM6DSM_CTRL10_C, 0x00);
     if (ret != 0)
     {
         LOG_E("LSM6DSM: Failed to configure CTRL10_C");
