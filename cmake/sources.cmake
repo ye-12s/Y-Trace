@@ -91,6 +91,12 @@ set(Y_TRACE_SOURCES
 
 )
 
+if(Y_TRACE_ENABLE_FATFS_SD_BENCH OR Y_TRACE_FATFS_SD_BENCH_AUTORUN)
+    list(APPEND Y_TRACE_SOURCES
+        Application/sample/fatfs_sd_bench.c
+    )
+endif()
+
 if(Y_TRACE_ENABLE_LVGL)
     list(APPEND Y_TRACE_SOURCES
         Application/map/map_benchmark.c

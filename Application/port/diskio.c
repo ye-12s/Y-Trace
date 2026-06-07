@@ -7,57 +7,49 @@
 /* storage control modules to the FatFs module with a defined API.       */
 /*-----------------------------------------------------------------------*/
 
-
-#include "ff.h"      /* Obtains integer types */
-#include "diskio.h"    /* Declarations of disk functions */
+#include "ff.h"     /* Obtains integer types */
+#include "diskio.h" /* Declarations of disk functions */
 
 #include <string.h>
 #include "drivers/drv_sdio.h"
 
 /* Definitions of physical drive number for each drive */
-#define DEV_MMC    0  /* Example: Map MMC/SD card to physical drive 1 */
+#define DEV_MMC 0 /* Example: Map MMC/SD card to physical drive 1 */
 
-#if defined ( __ICCARM__ ) /* iar compiler */
-    #pragma data_alignment=4
+#if defined(__ICCARM__) /* iar compiler */
+#pragma data_alignment = 4
 #endif
-ALIGNED_HEAD uint8_t sdio_data_buffer[512] ALIGNED_TAIL;  /* buf for sd_read_disk/sd_write_disk function used. */
+ALIGNED_HEAD uint8_t sdio_data_buffer[512] ALIGNED_TAIL; /* buf for sd_read_disk/sd_write_disk function used. */
 
 sd_error_status_type sd_read_disk(uint8_t *buf, uint32_t sector, uint8_t cnt);
 sd_error_status_type sd_write_disk(const uint8_t *buf, uint32_t sector, uint8_t cnt);
 
 /**
-  * @brief  read sd card sector
-  * @param  buf: read data buf
-  * @param  sector: sector address
-  * @param  cnt: sector count
-  * @retval sd_error_status_type: sd card error code.
-  */
+ * @brief  read sd card sector
+ * @param  buf: read data buf
+ * @param  sector: sector address
+ * @param  cnt: sector count
+ * @retval sd_error_status_type: sd card error code.
+ */
 sd_error_status_type sd_read_disk(uint8_t *buf, uint32_t sector, uint8_t cnt)
 {
     sd_error_status_type sta = SD_OK;
-    long long lsector = sector;
+    long long lsector        = sector;
     uint8_t n;
 
     /* data address is in block (512 byte) units. */
     lsector <<= 9;
 
-    if ((uint32_t)buf % 4 != 0)
-    {
-        for (n = 0; n < cnt; n++)
-        {
+    if ((uint32_t)buf % 4 != 0) {
+        for (n = 0; n < cnt; n++) {
             sta = sd_block_read(sdio_data_buffer, lsector + 512 * n, 512);
             memcpy(buf, sdio_data_buffer, 512);
             buf += 512;
         }
-    }
-    else
-    {
-        if (cnt == 1)
-        {
+    } else {
+        if (cnt == 1) {
             sta = sd_block_read(buf, lsector, 512);
-        }
-        else
-        {
+        } else {
             sta = sd_mult_blocks_read(buf, lsector, 512, cnt);
         }
     }
@@ -66,12 +58,12 @@ sd_error_status_type sd_read_disk(uint8_t *buf, uint32_t sector, uint8_t cnt)
 }
 
 /**
-  * @brief  write sd card sector
-  * @param  buf: write data buf
-  * @param  sector: sector address
-  * @param  cnt: sector count
-  * @retval sd_error_status_type: sd card error code.
-  */
+ * @brief  write sd card sector
+ * @param  buf: write data buf
+ * @param  sector: sector address
+ * @param  cnt: sector count
+ * @retval sd_error_status_type: sd card error code.
+ */
 sd_error_status_type sd_write_disk(const uint8_t *buf, uint32_t sector, uint8_t cnt)
 {
     sd_error_status_type sta = SD_OK;
@@ -81,23 +73,16 @@ sd_error_status_type sd_write_disk(const uint8_t *buf, uint32_t sector, uint8_t 
     /* data address is in block (512 byte) units. */
     lsector <<= 9;
 
-    if ((uint32_t)buf % 4 != 0)
-    {
-        for (n = 0; n < cnt; n++)
-        {
+    if ((uint32_t)buf % 4 != 0) {
+        for (n = 0; n < cnt; n++) {
             memcpy(sdio_data_buffer, buf, 512);
             sta = sd_block_write(sdio_data_buffer, lsector + 512 * n, 512);
             buf += 512;
         }
-    }
-    else
-    {
-        if (cnt == 1)
-        {
+    } else {
+        if (cnt == 1) {
             sta = sd_block_write(buf, lsector, 512);
-        }
-        else
-        {
+        } else {
             sta = sd_mult_blocks_write(buf, lsector, 512, cnt);
         }
     }
@@ -109,70 +94,74 @@ sd_error_status_type sd_write_disk(const uint8_t *buf, uint32_t sector, uint8_t 
 /* Get Drive Status                                                      */
 /*-----------------------------------------------------------------------*/
 DSTATUS disk_status(
-    BYTE pdrv    /* Physical drive nmuber to identify the drive */
+    BYTE pdrv /* Physical drive nmuber to identify the drive */
 )
 {
     DSTATUS stat;
     int result;
 
-    switch (pdrv)
-    {
-    case DEV_MMC :
-        result = 0;
-        stat = (DSTATUS)result;
-        return stat;
+    switch (pdrv) {
+        case DEV_MMC:
+            result = 0;
+            stat   = (DSTATUS)result;
+            return stat;
     }
     return STA_NOINIT;
 }
-
-
 
 /*-----------------------------------------------------------------------*/
 /* Inidialize a Drive                                                    */
 /*-----------------------------------------------------------------------*/
 DSTATUS disk_initialize(
-    BYTE pdrv        /* Physical drive nmuber to identify the drive */
+    BYTE pdrv /* Physical drive nmuber to identify the drive */
 )
 {
     DSTATUS stat;
     int result;
-    switch (pdrv)
-    {
-    case DEV_MMC :
-        result = sd_init();
-        stat = (DSTATUS)result;
-        return stat;
+    switch (pdrv) {
+        case DEV_MMC:
+            result = sd_init();
+            stat   = (DSTATUS)result;
+            return stat;
     }
     return STA_NOINIT;
 }
-
-
 
 /*-----------------------------------------------------------------------*/
 /* Read Sector(s)                                                        */
 /*-----------------------------------------------------------------------*/
 DRESULT disk_read(
     BYTE pdrv,    /* Physical drive nmuber to identify the drive */
-    BYTE *buff,    /* Data buffer to store read data */
-    LBA_t sector,  /* Start sector in LBA */
+    BYTE *buff,   /* Data buffer to store read data */
+    LBA_t sector, /* Start sector in LBA */
     UINT count    /* Number of sectors to read */
 )
 {
-    DRESULT res;
-    int result;
+    switch (pdrv) {
+        case DEV_MMC:
+            if (count == 0U) {
+                return RES_PARERR;
+            }
 
-    switch (pdrv)
-    {
-    case DEV_MMC :
-        result = sd_read_disk(buff, sector, count);
-        res = (DRESULT)result;
-        return res;
+            /*
+             * FatFs often asks for multi-sector transfers when the caller uses
+             * 4 KiB or larger buffers. The current SDIO multi-block path is not
+             * reliable enough for filesystem validation on this board, while
+             * single-block transfers pass byte-for-byte smoke tests. Keep the
+             * block-device contract reliable here; the benchmark reports the
+             * resulting throughput so the multi-block path can be optimized later
+             * with evidence.
+             */
+            for (UINT index = 0U; index < count; index++) {
+                if (sd_read_disk(buff + 512U * index, (uint32_t)(sector + index), 1U) != SD_OK) {
+                    return RES_ERROR;
+                }
+            }
+            return RES_OK;
     }
 
     return RES_PARERR;
 }
-
-
 
 /*-----------------------------------------------------------------------*/
 /* Write Sector(s)                                                       */
@@ -180,21 +169,26 @@ DRESULT disk_read(
 #if FF_FS_READONLY == 0
 
 DRESULT disk_write(
-    BYTE pdrv,      /* Physical drive nmuber to identify the drive */
-    const BYTE *buff,  /* Data to be written */
-    LBA_t sector,    /* Start sector in LBA */
-    UINT count      /* Number of sectors to write */
+    BYTE pdrv,        /* Physical drive nmuber to identify the drive */
+    const BYTE *buff, /* Data to be written */
+    LBA_t sector,     /* Start sector in LBA */
+    UINT count        /* Number of sectors to write */
 )
 {
-    DRESULT res;
-    int result;
+    switch (pdrv) {
+        case DEV_MMC:
+            if (count == 0U) {
+                return RES_PARERR;
+            }
 
-    switch (pdrv)
-    {
-    case DEV_MMC :
-        result = sd_write_disk(buff, sector, count);
-        res = (DRESULT)result;
-        return res;
+            /* Same reliability tradeoff as disk_read(): avoid SDIO multi-block
+             * writes until that lower layer has separate evidence. */
+            for (UINT index = 0U; index < count; index++) {
+                if (sd_write_disk(buff + 512U * index, (uint32_t)(sector + index), 1U) != SD_OK) {
+                    return RES_ERROR;
+                }
+            }
+            return RES_OK;
     }
 
     return RES_PARERR;
@@ -202,45 +196,42 @@ DRESULT disk_write(
 
 #endif
 
-
 /*-----------------------------------------------------------------------*/
 /* Miscellaneous Functions                                               */
 /*-----------------------------------------------------------------------*/
 DRESULT disk_ioctl(
-    BYTE pdrv,    /* Physical drive nmuber (0..) */
-    BYTE cmd,    /* Control code */
-    void *buff    /* Buffer to send/receive control data */
+    BYTE pdrv, /* Physical drive nmuber (0..) */
+    BYTE cmd,  /* Control code */
+    void *buff /* Buffer to send/receive control data */
 )
 {
     DRESULT res;
     int result;
 
-    switch (pdrv)
-    {
-    case DEV_MMC :
-        switch (cmd)
-        {
-        case CTRL_SYNC:
-            result = RES_OK;
-            break;
-        case GET_SECTOR_SIZE:
-            *(DWORD*)buff = 512;
-            result = RES_OK;
-            break;
-        case GET_SECTOR_COUNT:
-            *(DWORD*)buff = sd_card_info.card_capacity / 512;
-            result = RES_OK;
-            break;
-        case GET_BLOCK_SIZE:
-            *(DWORD*)buff = sd_card_info.card_blk_size;
-            result = RES_OK;
-            break;
-        default:
-            result = RES_PARERR;
-            break;
-        }
-        res = (DRESULT)result;
-        return res;
+    switch (pdrv) {
+        case DEV_MMC:
+            switch (cmd) {
+                case CTRL_SYNC:
+                    result = RES_OK;
+                    break;
+                case GET_SECTOR_SIZE:
+                    *(DWORD *)buff = 512;
+                    result         = RES_OK;
+                    break;
+                case GET_SECTOR_COUNT:
+                    *(DWORD *)buff = sd_card_info.card_capacity / 512;
+                    result         = RES_OK;
+                    break;
+                case GET_BLOCK_SIZE:
+                    *(DWORD *)buff = sd_card_info.card_blk_size;
+                    result         = RES_OK;
+                    break;
+                default:
+                    result = RES_PARERR;
+                    break;
+            }
+            res = (DRESULT)result;
+            return res;
     }
 
     return RES_PARERR;

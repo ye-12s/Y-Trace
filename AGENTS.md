@@ -17,6 +17,7 @@ The Debug CMake preset uses ARM GCC, C11, hard-float Cortex-M4 settings, and `Bo
 For command-line flashing from the repository root, replace `${workspaceFolder}` with the absolute repository path:
 `jf flash /home/ans/workspace/Y-Trace/firmware/Y-Trace/build/cmake/Y-Trace.hex --chip AT32F403AVGT7`.
 USB probe access may require elevated permissions; if the first flash attempt reports a probe/USB open error, rerun the same `jf flash` command with the required approval rather than switching tools.
+For RTT log capture, default to the repository tool wrapper: `jf rtt --chip AT32F403AVGT7 --search-range 0x20000000:0x18000 --log <path>`. Use this before falling back to raw `JLinkRTTClient`.
 
 ## Coding Style & Naming Conventions
 

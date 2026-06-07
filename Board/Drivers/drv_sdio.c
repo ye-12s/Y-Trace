@@ -2071,29 +2071,38 @@ sd_error_status_type command_rsp6_error(uint8_t cmd, uint16_t* prca) {
  * @param  new_state: new state of the sdio wide bus mode. (true or false)
  * @retval sd_error_status_type: sd card error code.
  */
-sd_error_status_type sd_bus_wide_enable(confirm_state new_state) {
-  sd_error_status_type status = SD_OK;
-  uint32_t response = 0;
-  uint8_t arg = 0x00;
+sd_error_status_type sd_bus_wide_enable(confirm_state new_state)
+{
+    sd_error_status_type status = SD_OK;
+    uint32_t response           = 0;
+    uint8_t arg                 = 0x00;
 
-  if (new_state == TRUE) {
-    arg = 0x02;
-  } else {
-    arg = 0x00;
-  }
+    if (new_state == TRUE) {
+        arg = 0x02;
+    } else {
+        arg = 0x00;
+    }
 
-  /* get response1 */
-  response = sdio_response_get(SDIOx, SDIO_RSP1_INDEX);
+    /* get response1 */
+    response = sdio_response_get(SDIOx, SDIO_RSP1_INDEX);
 
-  /* check card locked or not */
-  if (response & SD_CARD_LOCKED) {
-    return SD_LOCK_UNLOCK_ERROR;
-  }
+    /* check card locked or not */
+    if (response & SD_CARD_LOCKED) {
+        return SD_LOCK_UNLOCK_ERROR;
+    }
 
-  if (sd_card_info.sd_scr_reg.sd_bus_width) {
-    sdio_command_init_struct.argument = (uint32_t)(sd_card_info.rca << 16);
+    /*
+     * Do not use the SCR width bitmap as a hard gate for ACMD6. The target
+     * socket is wired for DAT0..DAT3, and the card response to ACMD6 is the
+     * authoritative compatibility check.
+     */
+    if ((new_state == TRUE) && ((sd_card_info.sd_scr_reg.sd_bus_width & 0x04U) == 0U)) {
+        rt_kprintf("[SDIO] SCR did not advertise 4-bit; trying ACMD6 because DAT0-DAT3 are wired\n");
+    }
+
+    sdio_command_init_struct.argument  = (uint32_t)(sd_card_info.rca << 16);
     sdio_command_init_struct.cmd_index = SD_CMD_APP_CMD;
-    sdio_command_init_struct.rsp_type = SDIO_RESPONSE_SHORT;
+    sdio_command_init_struct.rsp_type  = SDIO_RESPONSE_SHORT;
     sdio_command_init_struct.wait_type = SDIO_WAIT_FOR_NO;
 
     /* sdio command config */
@@ -2104,12 +2113,12 @@ sd_error_status_type sd_bus_wide_enable(confirm_state new_state) {
     status = command_rsp1_error(SD_CMD_APP_CMD);
 
     if (status != SD_OK) {
-      return status;
+        return status;
     }
 
-    sdio_command_init_struct.argument = arg;
+    sdio_command_init_struct.argument  = arg;
     sdio_command_init_struct.cmd_index = SD_CMD_APP_SD_SET_BUSWIDTH;
-    sdio_command_init_struct.rsp_type = SDIO_RESPONSE_SHORT;
+    sdio_command_init_struct.rsp_type  = SDIO_RESPONSE_SHORT;
     sdio_command_init_struct.wait_type = SDIO_WAIT_FOR_NO;
 
     /* sdio command config */
@@ -2119,9 +2128,6 @@ sd_error_status_type sd_bus_wide_enable(confirm_state new_state) {
 
     status = command_rsp1_error(SD_CMD_APP_SD_SET_BUSWIDTH);
     return status;
-  } else {
-    return SD_REQ_NOT_APPLICABLE;
-  }
 }
 
 /**
@@ -2405,144 +2411,215 @@ sd_error_status_type get_ext_csd(void) {
  * @brief  find the sd card scr register value.
  * @retval sd_error_status_type: sd card error code.
  */
-sd_error_status_type scr_find(void) {
-  uint32_t index = 0, sts_reg = 0;
-  sd_error_status_type status = SD_OK;
-  uint32_t* tempscr;
+sd_error_status_type scr_find(void)
+{
+    uint32_t index = 0, sts_reg = 0;
+    sd_error_status_type status = SD_OK;
+    uint32_t scr_words[2]       = {0, 0};
+    uint32_t *tempscr           = scr_words;
 
-  tempscr = (uint32_t*)&(sd_card_info.sd_scr_reg);
+    /* send cmd16, set block length */
+    sdio_command_init_struct.argument  = (uint32_t)8;
+    sdio_command_init_struct.cmd_index = SD_CMD_SET_BLOCKLEN;
+    sdio_command_init_struct.rsp_type  = SDIO_RESPONSE_SHORT;
+    sdio_command_init_struct.wait_type = SDIO_WAIT_FOR_NO;
 
-  /* send cmd16, set block length */
-  sdio_command_init_struct.argument = (uint32_t)8;
-  sdio_command_init_struct.cmd_index = SD_CMD_SET_BLOCKLEN;
-  sdio_command_init_struct.rsp_type = SDIO_RESPONSE_SHORT;
-  sdio_command_init_struct.wait_type = SDIO_WAIT_FOR_NO;
+    /* sdio command config */
+    sdio_command_config(SDIOx, &sdio_command_init_struct);
+    /* enable ccsm */
+    sdio_command_state_machine_enable(SDIOx, TRUE);
 
-  /* sdio command config */
-  sdio_command_config(SDIOx, &sdio_command_init_struct);
-  /* enable ccsm */
-  sdio_command_state_machine_enable(SDIOx, TRUE);
+    status = command_rsp1_error(SD_CMD_SET_BLOCKLEN);
 
-  status = command_rsp1_error(SD_CMD_SET_BLOCKLEN);
-
-  if (status != SD_OK) {
-    return status;
-  }
-
-  /* send cmd55 */
-  sdio_command_init_struct.argument = (uint32_t)(sd_card_info.rca << 16);
-  sdio_command_init_struct.cmd_index = SD_CMD_APP_CMD;
-  sdio_command_init_struct.rsp_type = SDIO_RESPONSE_SHORT;
-  sdio_command_init_struct.wait_type = SDIO_WAIT_FOR_NO;
-
-  /* sdio command config */
-  sdio_command_config(SDIOx, &sdio_command_init_struct);
-  /* enable ccsm */
-  sdio_command_state_machine_enable(SDIOx, TRUE);
-
-  status = command_rsp1_error(SD_CMD_APP_CMD);
-
-  if (status != SD_OK) {
-    return status;
-  }
-
-  sdio_data_init_struct.block_size = SDIO_DATA_BLOCK_SIZE_8B;
-  sdio_data_init_struct.data_length = 8;
-  sdio_data_init_struct.timeout = SD_DATATIMEOUT;
-  sdio_data_init_struct.transfer_direction = SDIO_DATA_TRANSFER_TO_CONTROLLER;
-  sdio_data_init_struct.transfer_mode = SDIO_DATA_BLOCK_TRANSFER;
-
-  sdio_data_config(SDIOx, &sdio_data_init_struct);
-  sdio_data_state_machine_enable(SDIOx, TRUE);
-
-  /* send cmd51 */
-  sdio_command_init_struct.argument = 0x0;
-  sdio_command_init_struct.cmd_index = SD_CMD_SD_APP_SEND_SCR;
-  sdio_command_init_struct.rsp_type = SDIO_RESPONSE_SHORT;
-  sdio_command_init_struct.wait_type = SDIO_WAIT_FOR_NO;
-
-  /* sdio command config */
-  sdio_command_config(SDIOx, &sdio_command_init_struct);
-  /* enable ccsm */
-  sdio_command_state_machine_enable(SDIOx, TRUE);
-
-  status = command_rsp1_error(SD_CMD_SD_APP_SEND_SCR);
-
-  if (status != SD_OK) {
-    rt_kprintf("[SDIO] SCR: CMD51 response error: %d\n", status);
-    return status;
-  }
-  
-  uint32_t loop_count = 0;
-  while (
-      !(sts_reg & (SDIO_RXERRO_FLAG | SDIO_DTFAIL_FLAG | SDIO_DTTIMEOUT_FLAG |
-                   SDIO_DTBLKCMPL_FLAG | SDIO_SBITERR_FLAG))) {
-    if (sdio_flag_get(SDIOx, SDIO_RXBUF_FLAG) != RESET) {
-      uint32_t data = sdio_data_read(SDIOx);
-      *(tempscr + index) = data;
-      index++;
+    if (status != SD_OK) {
+        return status;
     }
-    sts_reg = SDIOx->sts;
-    
-    loop_count++;
-    if (loop_count > 100000) {
-      rt_kprintf("[SDIO] SCR: Timeout! final sts=0x%08X, read %d words\n", sts_reg, index);
-      break;
+
+    /* send cmd55 */
+    sdio_command_init_struct.argument  = (uint32_t)(sd_card_info.rca << 16);
+    sdio_command_init_struct.cmd_index = SD_CMD_APP_CMD;
+    sdio_command_init_struct.rsp_type  = SDIO_RESPONSE_SHORT;
+    sdio_command_init_struct.wait_type = SDIO_WAIT_FOR_NO;
+
+    /* sdio command config */
+    sdio_command_config(SDIOx, &sdio_command_init_struct);
+    /* enable ccsm */
+    sdio_command_state_machine_enable(SDIOx, TRUE);
+
+    status = command_rsp1_error(SD_CMD_APP_CMD);
+
+    if (status != SD_OK) {
+        return status;
     }
-  }
-  
-  /* 尝试读取剩余数据 */
-  int retry = 0;
-  while (index < 2 && retry < 100) {
-    if (sdio_flag_get(SDIOx, SDIO_RXBUF_FLAG) != RESET) {
-      uint32_t data = sdio_data_read(SDIOx);
-      *(tempscr + index) = data;
-      index++;
+
+    sdio_data_init_struct.block_size         = SDIO_DATA_BLOCK_SIZE_8B;
+    sdio_data_init_struct.data_length        = 8;
+    sdio_data_init_struct.timeout            = SD_DATATIMEOUT;
+    sdio_data_init_struct.transfer_direction = SDIO_DATA_TRANSFER_TO_CONTROLLER;
+    sdio_data_init_struct.transfer_mode      = SDIO_DATA_BLOCK_TRANSFER;
+
+    sdio_data_config(SDIOx, &sdio_data_init_struct);
+    sdio_data_state_machine_enable(SDIOx, TRUE);
+
+    /* send cmd51 */
+    sdio_command_init_struct.argument  = 0x0;
+    sdio_command_init_struct.cmd_index = SD_CMD_SD_APP_SEND_SCR;
+    sdio_command_init_struct.rsp_type  = SDIO_RESPONSE_SHORT;
+    sdio_command_init_struct.wait_type = SDIO_WAIT_FOR_NO;
+
+    /* sdio command config */
+    sdio_command_config(SDIOx, &sdio_command_init_struct);
+    /* enable ccsm */
+    sdio_command_state_machine_enable(SDIOx, TRUE);
+
+    status = command_rsp1_error(SD_CMD_SD_APP_SEND_SCR);
+
+    if (status != SD_OK) {
+        rt_kprintf("[SDIO] SCR: CMD51 response error: %d\n", status);
+        return status;
     }
-    retry++;
-  }
 
-  if (sdio_flag_get(SDIOx, SDIO_DTTIMEOUT_FLAG) != RESET) {
-    sdio_flag_clear(SDIOx, SDIO_DTTIMEOUT_FLAG);
-    return SD_DATA_TIMEOUT;
-  } else if (sdio_flag_get(SDIOx, SDIO_DTFAIL_FLAG) != RESET) {
-    sdio_flag_clear(SDIOx, SDIO_DTFAIL_FLAG);
-    return SD_DATA_FAIL;
-  } else if (sdio_flag_get(SDIOx, SDIO_RXERRO_FLAG) != RESET) {
-    sdio_flag_clear(SDIOx, SDIO_RXERRO_FLAG);
-    return SD_RX_OVERRUN;
-  } else if (sdio_flag_get(SDIOx, SDIO_SBITERR_FLAG) != RESET) {
-    sdio_flag_clear(SDIOx, SDIO_SBITERR_FLAG);
-    return SD_START_BIT_ERR;
-  }
+    uint32_t loop_count = 0;
+    while (
+        !(sts_reg & (SDIO_RXERRO_FLAG | SDIO_DTFAIL_FLAG | SDIO_DTTIMEOUT_FLAG |
+                     SDIO_DTBLKCMPL_FLAG | SDIO_SBITERR_FLAG))) {
+        if (sdio_flag_get(SDIOx, SDIO_RXBUF_FLAG) != RESET) {
+            uint32_t data = sdio_data_read(SDIOx);
+            if (index < 2) {
+                *(tempscr + index) = data;
+            }
+            index++;
+        }
+        sts_reg = SDIOx->sts;
 
-  sdio_flag_clear(SDIOx, SDIO_STATIC_FLAGS);
+        loop_count++;
+        if (loop_count > 100000) {
+            rt_kprintf("[SDIO] SCR: Timeout! final sts=0x%08X, read %d words\n", sts_reg, index);
+            break;
+        }
+    }
 
-  /* SCR数据处理：SD卡以大端序发送，每个字内部需要字节序反转 */
-  if (index >= 1) {
-    uint32_t temp0 = tempscr[0];
-    
-    /* 反转字节序 */
-    tempscr[0] = __REV(temp0);
-    tempscr[1] = (index >= 2) ? __REV(tempscr[1]) : 0;
-    
-    /* 直接从字节解析SCR关键字段（不依赖位域，避免字节序问题） */
-    uint8_t* scr_bytes = (uint8_t*)tempscr;
-    uint8_t scr_struct = (scr_bytes[0] >> 4) & 0xF;     /* bit[63:60] */
-    uint8_t sd_spec = scr_bytes[0] & 0xF;                /* bit[59:56] */
-    uint8_t bus_widths = (scr_bytes[1]) & 0xF;          /* bit[51:48] */
-    
-    /* 手动设置到结构体（绕过位域问题） */
-    sd_card_info.sd_scr_reg.scr_structure = scr_struct;
-    sd_card_info.sd_scr_reg.sd_spec = sd_spec;
-    sd_card_info.sd_scr_reg.sd_bus_width = (bus_widths & 0x4) ? 1 : 0;  /* bit2=1表示支持4-bit */
-    
-    rt_kprintf("[SDIO] SCR: SD v%d.%d, %s\n",
-               sd_spec / 10, sd_spec % 10,
-               (bus_widths & 0x4) ? "supports 4-bit bus" : "1-bit only");
-  }
+    /* 尝试读取剩余数据 */
+    int retry = 0;
+    while (index < 2 && retry < 100) {
+        if (sdio_flag_get(SDIOx, SDIO_RXBUF_FLAG) != RESET) {
+            uint32_t data      = sdio_data_read(SDIOx);
+            *(tempscr + index) = data;
+            index++;
+        }
+        retry++;
+    }
 
-  return status;
+    if (sdio_flag_get(SDIOx, SDIO_DTTIMEOUT_FLAG) != RESET) {
+        sdio_flag_clear(SDIOx, SDIO_DTTIMEOUT_FLAG);
+        return SD_DATA_TIMEOUT;
+    } else if (sdio_flag_get(SDIOx, SDIO_DTFAIL_FLAG) != RESET) {
+        sdio_flag_clear(SDIOx, SDIO_DTFAIL_FLAG);
+        return SD_DATA_FAIL;
+    } else if (sdio_flag_get(SDIOx, SDIO_RXERRO_FLAG) != RESET) {
+        sdio_flag_clear(SDIOx, SDIO_RXERRO_FLAG);
+        return SD_RX_OVERRUN;
+    } else if (sdio_flag_get(SDIOx, SDIO_SBITERR_FLAG) != RESET) {
+        sdio_flag_clear(SDIOx, SDIO_SBITERR_FLAG);
+        return SD_START_BIT_ERR;
+    }
+
+    sdio_flag_clear(SDIOx, SDIO_STATIC_FLAGS);
+
+    /*
+     * SCR is an SD-defined 64-bit big-endian register, while the AT SDIO FIFO is
+     * read as 32-bit words. Keep the official command flow above, but parse the
+     * received words explicitly instead of aliasing them to compiler-dependent C
+     * bitfields. Try both observed word byte orders and select the plausible SCR
+     * view; a valid SD card must advertise 1-bit support and may advertise 4-bit
+     * support in SD_BUS_WIDTHS bit2.
+     */
+    if (index >= 1) {
+        uint8_t candidates[4][8];
+        uint8_t best   = 0;
+        int best_score = -1000;
+
+        candidates[0][0] = (uint8_t)(scr_words[0] >> 24);
+        candidates[0][1] = (uint8_t)(scr_words[0] >> 16);
+        candidates[0][2] = (uint8_t)(scr_words[0] >> 8);
+        candidates[0][3] = (uint8_t)scr_words[0];
+        candidates[0][4] = (uint8_t)(scr_words[1] >> 24);
+        candidates[0][5] = (uint8_t)(scr_words[1] >> 16);
+        candidates[0][6] = (uint8_t)(scr_words[1] >> 8);
+        candidates[0][7] = (uint8_t)scr_words[1];
+
+        candidates[1][0] = (uint8_t)scr_words[0];
+        candidates[1][1] = (uint8_t)(scr_words[0] >> 8);
+        candidates[1][2] = (uint8_t)(scr_words[0] >> 16);
+        candidates[1][3] = (uint8_t)(scr_words[0] >> 24);
+        candidates[1][4] = (uint8_t)scr_words[1];
+        candidates[1][5] = (uint8_t)(scr_words[1] >> 8);
+        candidates[1][6] = (uint8_t)(scr_words[1] >> 16);
+        candidates[1][7] = (uint8_t)(scr_words[1] >> 24);
+
+        for (uint8_t byte = 0; byte < 4; byte++) {
+            candidates[2][byte]     = candidates[0][byte + 4];
+            candidates[2][byte + 4] = candidates[0][byte];
+            candidates[3][byte]     = candidates[1][byte + 4];
+            candidates[3][byte + 4] = candidates[1][byte];
+        }
+
+        for (uint8_t candidate = 0; candidate < 4; candidate++) {
+            uint8_t scr_struct = (candidates[candidate][0] >> 4) & 0x0F;
+            uint8_t sd_spec    = candidates[candidate][0] & 0x0F;
+            uint8_t bus_widths = candidates[candidate][1] & 0x0F;
+            int score          = 0;
+
+            score += (scr_struct <= 1U) ? 4 : -10;
+            score += (sd_spec <= 4U) ? 2 : -2;
+            score += (bus_widths & 0x01U) ? 4 : -6;
+            score += (bus_widths & 0x04U) ? 5 : 0;
+            score += ((bus_widths & (uint8_t)~0x05U) == 0U) ? 1 : -1;
+
+            if (score > best_score) {
+                best_score = score;
+                best       = candidate;
+            }
+        }
+
+        uint8_t *scr_bytes       = candidates[best];
+        uint8_t scr_struct       = (scr_bytes[0] >> 4) & 0x0F; /* bit[63:60] */
+        uint8_t sd_spec          = scr_bytes[0] & 0x0F;        /* bit[59:56] */
+        uint8_t data_after_erase = (scr_bytes[1] >> 7) & 1;    /* bit[55] */
+        uint8_t sd_security      = (scr_bytes[1] >> 4) & 0x07; /* bit[54:52] */
+        uint8_t bus_widths       = scr_bytes[1] & 0x0F;        /* bit[51:48] */
+        uint8_t sd_spec3         = (scr_bytes[2] >> 7) & 1;    /* bit[47] */
+        uint8_t cmd20            = scr_bytes[3] & 1;           /* bit[32] */
+        uint8_t cmd23            = (scr_bytes[3] >> 1) & 1;    /* bit[33] */
+        const char *spec_text    = "reserved/extended";
+
+        if (sd_spec == 0U) {
+            spec_text = "1.0/1.01";
+        } else if (sd_spec == 1U) {
+            spec_text = "1.10";
+        } else if (sd_spec == 2U) {
+            spec_text = sd_spec3 ? "3.x+" : "2.00";
+        }
+
+        sd_card_info.sd_scr_reg.scr_structure         = scr_struct;
+        sd_card_info.sd_scr_reg.sd_spec               = sd_spec;
+        sd_card_info.sd_scr_reg.data_stat_after_erase = data_after_erase;
+        sd_card_info.sd_scr_reg.sd_security           = sd_security;
+        sd_card_info.sd_scr_reg.sd_bus_width          = bus_widths;
+        sd_card_info.sd_scr_reg.sd_spec3              = sd_spec3;
+        sd_card_info.sd_scr_reg.cmd20_support         = cmd20;
+        sd_card_info.sd_scr_reg.cmd23_support         = cmd23;
+
+        rt_kprintf("[SDIO] SCR raw=%08X %08X parsed=%02X %02X %02X %02X %02X %02X %02X %02X order=%u\n",
+                   scr_words[0], scr_words[1],
+                   scr_bytes[0], scr_bytes[1], scr_bytes[2], scr_bytes[3],
+                   scr_bytes[4], scr_bytes[5], scr_bytes[6], scr_bytes[7], best);
+        rt_kprintf("[SDIO] SCR: structure=%u sd_spec=%s(code=%u) bus_widths=0x%X %s\n",
+                   scr_struct, spec_text, sd_spec, bus_widths,
+                   (bus_widths & 0x04U) ? "supports 4-bit bus" : "1-bit only");
+    }
+
+    return status;
 }
 
 /**

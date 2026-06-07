@@ -85,6 +85,8 @@
 
 //Enable J-Link RTT output for RT-Thread console and ulog.
 #define Y_TRACE_USING_RTT_CONSOLE
+#ifndef Y_TRACE_RTT_UP_BUFFER_SIZE
 #define Y_TRACE_RTT_UP_BUFFER_SIZE 1024U
+#endif
 
 #endif

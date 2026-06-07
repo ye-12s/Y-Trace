@@ -1,0 +1,49 @@
+
+ \ | /
+- RT -     Thread Operating System
+ / | \     3.1.5 build Jun  7 2026
+ 2006 - 2020 Copyright by rt-thread team
+[1] I/ main: utest is initialize success.
+[6] I/ main: total utest testcase num: (0)
+[10] I/ main: LVGL port initialized.
+[14] I/ main: Application initialization completed.
+msh >fatfs_sd_bench: autorun begin after boot delay
+fatfs_sd_bench: start target=SDIO_SD drive=0: file=0:/YT_BENCH.BIN file_size=1048576 destructive=yes
+fatfs_sd_bench: format_on_mount_failure=yes
+fatfs_sd_bench: thresholds seq_read>=500KB/s tile4k>=200KB/s seq_write>=200KB/s gpx_append>=20KB/s
+[SDIO] Detected SDHC/SDXC card (High Capacity)
+[SDIO] Before card_info_get: card_type=2
+[SDIO] Calculating capacity for card_type=2
+[SDIO] Using SDHC/SDXC capacity formula
+[SDIO] SDHC: device_size=0x1DBD3, capacity=60906 MB
+[SDIO] After card_info_get: card_type=2, capacity=60906 MB
+[SDIO] SCR raw=43804502 00000000 parsed=02 45 80 43 00 00 00 00 order=1
+[SDIO] SCR: structure=0 sd_spec=3.x+(code=2) bus_widths=0x5 supports 4-bit bus
+[SDIO] Speed mode configured successfully
+[SDIO] 4-bit bus mode configured successfully
+fatfs_sd_bench: mount res=0
+fatfs_sd_bench: volume fs_type=3 csize=64 free=62358752 KB
+fatfs_sd_bench: phase=seq_write chunk=512 res=0
+fatfs_sd_bench: result seq_write    bytes=1048576 elapsed_ms=1729 chunk=512 throughput=592 KB/s threshold=200 PASS
+fatfs_sd_bench: phase=verify chunk=512 res=0
+fatfs_sd_bench: phase=seq_read chunk=512 res=0
+fatfs_sd_bench: result seq_read     bytes=1048576 elapsed_ms=424 chunk=512 throughput=2415 KB/s threshold=500 PASS
+fatfs_sd_bench: phase=seq_write chunk=4096 res=0
+fatfs_sd_bench: result seq_write    bytes=1048576 elapsed_ms=1673 chunk=4096 throughput=612 KB/s threshold=200 PASS
+fatfs_sd_bench: phase=verify chunk=4096 res=0
+fatfs_sd_bench: phase=seq_read chunk=4096 res=0
+fatfs_sd_bench: result seq_read     bytes=1048576 elapsed_ms=419 chunk=4096 throughput=2443 KB/s threshold=500 PASS
+fatfs_sd_bench: phase=seq_write chunk=16384 res=0
+fatfs_sd_bench: result seq_write    bytes=1048576 elapsed_ms=1689 chunk=16384 throughput=606 KB/s threshold=200 PASS
+fatfs_sd_bench: phase=verify chunk=16384 res=0
+fatfs_sd_bench: phase=seq_read chunk=16384 res=0
+fatfs_sd_bench: result seq_read     bytes=1048576 elapsed_ms=422 chunk=16384 throughput=2426 KB/s threshold=500 PASS
+fatfs_sd_bench: phase=tile_read chunk=4096 res=0
+fatfs_sd_bench: result tile_read    bytes=2097152 elapsed_ms=844 chunk=4096 throughput=2426 KB/s threshold=200 PASS
+fatfs_sd_bench: result limit_chunk  bytes=0 elapsed_ms=0 chunk=65536 throughput=0 KB/s threshold=0 SKIP static_buffer=16384 reason=RAM_budget
+fatfs_sd_bench: phase=gpx_append records=4096 sync_every=128 res=0
+fatfs_sd_bench: result gpx_append   bytes=257124 elapsed_ms=531 chunk=0 throughput=472 KB/s threshold=20 PASS
+fatfs_sd_bench: phase=gpx_verify expected_size=257124 res=0
+fatfs_sd_bench: summary best_seq_read=2443 KB/s best_seq_write=612 KB/s tile4k=2426 KB/s gpx_append=472 KB/s
+fatfs_sd_bench: PASS functional smoke complete; performance_warn=no
+fatfs_sd_bench: autorun end
