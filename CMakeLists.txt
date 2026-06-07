@@ -30,6 +30,8 @@ set_source_files_properties(
 if(Y_TRACE_ENABLE_LVGL)
     set_source_files_properties(
         ${Y_TRACE_LVGL_SOURCES}
+        Application/map/map_benchmark.c
+        Application/map/ytrace_map_tiles.c
         Application/port/lvgl_port.c
         PROPERTIES COMPILE_OPTIONS -O2
     )

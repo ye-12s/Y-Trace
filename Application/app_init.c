@@ -2,7 +2,11 @@
 #include "Drivers/drv_lcd.h"
 #include "Drivers/drv_soft_iic.h"
 #include "rtthread.h"
+#ifdef Y_TRACE_ENABLE_LVGL
+#include "port/lvgl_port.h"
+#else
 #include "sample/sample.h"
+#endif
 
 #define LOG_TAG "app.init"
 #define LOG_LVL LOG_LVL_DBG
@@ -29,6 +33,15 @@ INIT_COMPONENT_EXPORT(lcd_init);
 
 static int app_init(void)
 {
+#ifdef Y_TRACE_ENABLE_LVGL
+    int result = app_lvgl_port_init();
+    if (result != 0) {
+        LOG_E("LVGL port initialization failed: %d", result);
+        return result;
+    }
+
+    LOG_I("LVGL port initialized.");
+#else
     int result = lcd_refresh_sample_init();
     if (result != 0) {
         LOG_E("LCD refresh sample initialization failed: %d", result);
@@ -36,6 +49,7 @@ static int app_init(void)
     }
 
     LOG_I("LCD refresh sample initialized.");
+#endif
     LOG_I("Application initialization completed.");
     return 0;
 }

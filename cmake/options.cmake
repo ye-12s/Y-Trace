@@ -1,4 +1,4 @@
-option(Y_TRACE_ENABLE_LVGL "Build and start the LVGL UI path" OFF)
+option(Y_TRACE_ENABLE_LVGL "Build and start the LVGL UI path" ON)
 
 set(Y_TRACE_DEFINES
     _DEBUG
@@ -25,6 +25,10 @@ set(Y_TRACE_INCLUDE_DIRS
 )
 
 if(Y_TRACE_ENABLE_LVGL)
+    list(APPEND Y_TRACE_DEFINES
+        Y_TRACE_ENABLE_LVGL
+    )
+
     list(APPEND Y_TRACE_INCLUDE_DIRS
         ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/lvgl
     )

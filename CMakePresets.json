@@ -9,7 +9,8 @@
             "toolchainFile": "${sourceDir}/cmake/toolchains/arm-none-eabi.cmake",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "Y_TRACE_ENABLE_LVGL": "ON"
             }
         }
     ],

@@ -90,7 +90,11 @@ set(Y_TRACE_SOURCES
 )
 
 if(Y_TRACE_ENABLE_LVGL)
-    list(APPEND Y_TRACE_SOURCES Application/port/lvgl_port.c)
+    list(APPEND Y_TRACE_SOURCES
+        Application/map/map_benchmark.c
+        Application/map/ytrace_map_tiles.c
+        Application/port/lvgl_port.c
+    )
 
     file(GLOB_RECURSE Y_TRACE_LVGL_SOURCES CONFIGURE_DEPENDS
         ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/lvgl/src/*.c

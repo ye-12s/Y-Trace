@@ -11,8 +11,12 @@ Use the CMake presets from the repository root:
 - `cmake --preset debug`: configures the Debug build in `build/cmake/`.
 - `cmake --build --preset debug`: builds the firmware.
 - `cmake --build --preset debug --target clean`: removes generated CMake build outputs.
+- `jf flash ${workspaceFolder}/build/cmake/Y-Trace.hex --chip AT32F403AVGT7`: downloads the built firmware to the target. This is the repository's VS Code `download` task command and depends on a fresh Debug build.
 
 The Debug CMake preset uses ARM GCC, C11, hard-float Cortex-M4 settings, and `Board/misc/AT32F403AxG_FLASH.ld`.
+For command-line flashing from the repository root, replace `${workspaceFolder}` with the absolute repository path:
+`jf flash /home/ans/workspace/Y-Trace/firmware/Y-Trace/build/cmake/Y-Trace.hex --chip AT32F403AVGT7`.
+USB probe access may require elevated permissions; if the first flash attempt reports a probe/USB open error, rerun the same `jf flash` command with the required approval rather than switching tools.
 
 ## Coding Style & Naming Conventions
 
