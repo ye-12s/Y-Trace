@@ -9,8 +9,8 @@
 #include <rtthread.h>
 #include <stdint.h>
 
-#define WS2812B_PIN GET_PIN(A, 15)
-#define WS2812B_MAX_PIXELS 8U
+#define WS2812B_PIN        GET_PIN(A, 15)
+#define WS2812B_MAX_PIXELS 1U
 
 typedef struct
 {
