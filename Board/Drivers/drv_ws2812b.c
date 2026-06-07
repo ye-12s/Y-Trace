@@ -7,17 +7,17 @@
 #include "at32f403a_407.h"
 #include "rthw.h"
 
-#define WS2812B_TMR WS2812B_TMR2
-#define WS2812B_TMR2 TMR2
-#define WS2812B_TMR_CHANNEL TMR_SELECT_CHANNEL_1
+#define WS2812B_TMR              WS2812B_TMR2
+#define WS2812B_TMR2             TMR2
+#define WS2812B_TMR_CHANNEL      TMR_SELECT_CHANNEL_1
 
-#define WS2812B_DMA DMA1
-#define WS2812B_DMA_CHANNEL DMA1_CHANNEL1
+#define WS2812B_DMA              DMA1
+#define WS2812B_DMA_CHANNEL      DMA1_CHANNEL1
 #define WS2812B_DMA_FLEX_CHANNEL FLEX_CHANNEL1
-#define WS2812B_DMA_REQUEST DMA_FLEXIBLE_TMR2_CH1
-#define WS2812B_DMA_DONE DMA1_FDT1_FLAG
-#define WS2812B_DMA_ERR DMA1_DTERR1_FLAG
-#define WS2812B_DMA_CLR DMA1_GL1_FLAG
+#define WS2812B_DMA_REQUEST      DMA_FLEXIBLE_TMR2_OVERFLOW
+#define WS2812B_DMA_DONE         DMA1_FDT1_FLAG
+#define WS2812B_DMA_ERR          DMA1_DTERR1_FLAG
+#define WS2812B_DMA_CLR          DMA1_GL1_FLAG
 
 /*
  * Board clock config sets TMR2 on APB1 with APB1 prescaler /2.
@@ -25,20 +25,24 @@
  * so TMR2 runs from the 240 MHz effective timer clock.
  */
 #define WS2812B_TMR_COUNTER_HZ 240000000ULL
-#define WS2812B_NS_PER_SECOND 1000000000ULL
+#define WS2812B_NS_PER_SECOND  1000000000ULL
 #define WS2812B_NS_TO_TICKS(ns) \
     ((((uint64_t)(ns) * WS2812B_TMR_COUNTER_HZ) + (WS2812B_NS_PER_SECOND / 2ULL)) / WS2812B_NS_PER_SECOND)
 
-#define WS2812B_RESET_US 80U
-#define WS2812B_BIT_TOTAL_NS 1250U
-#define WS2812B_T0H_NS 375U
-#define WS2812B_T1H_NS 750U
-#define WS2812B_PWM_PERIOD ((uint16_t)WS2812B_NS_TO_TICKS(WS2812B_BIT_TOTAL_NS))
-#define WS2812B_DUTY_0 ((uint16_t)WS2812B_NS_TO_TICKS(WS2812B_T0H_NS))
-#define WS2812B_DUTY_1 ((uint16_t)WS2812B_NS_TO_TICKS(WS2812B_T1H_NS))
-#define WS2812B_BITS_PER_PIXEL 24U
-#define WS2812B_RESET_SLOTS 64U
-#define WS2812B_DMA_TIMEOUT_TICKS (RT_TICK_PER_SECOND / 10U)
+#define WS2812B_RESET_US                      80U
+#define WS2812B_BIT_TOTAL_NS                  1250U
+#define WS2812B_T0H_NS                        375U
+#define WS2812B_T1H_NS                        750U
+#define WS2812B_PWM_PERIOD                    ((uint16_t)WS2812B_NS_TO_TICKS(WS2812B_BIT_TOTAL_NS))
+#define WS2812B_DUTY_0                        ((uint16_t)WS2812B_NS_TO_TICKS(WS2812B_T0H_NS))
+#define WS2812B_DUTY_1                        ((uint16_t)WS2812B_NS_TO_TICKS(WS2812B_T1H_NS))
+#define WS2812B_BUILD_ASSERT(condition, name) typedef char name[(condition) ? 1 : -1]
+WS2812B_BUILD_ASSERT(WS2812B_PWM_PERIOD == 300U, ws2812b_period_ticks_must_match_board_clock);
+WS2812B_BUILD_ASSERT(WS2812B_DUTY_0 == 90U, ws2812b_t0h_ticks_must_match_board_clock);
+WS2812B_BUILD_ASSERT(WS2812B_DUTY_1 == 180U, ws2812b_t1h_ticks_must_match_board_clock);
+#define WS2812B_BITS_PER_PIXEL           24U
+#define WS2812B_RESET_SLOTS              64U
+#define WS2812B_DMA_TIMEOUT_TICKS        (RT_TICK_PER_SECOND / 10U)
 #define WS2812B_FRAME_SLOTS(pixel_count) ((pixel_count) * WS2812B_BITS_PER_PIXEL + WS2812B_RESET_SLOTS)
 
 static uint16_t ws2812b_pwm_buffer[WS2812B_FRAME_SLOTS(WS2812B_MAX_PIXELS)];
@@ -56,10 +60,10 @@ static void ws2812b_timer_init(void)
     tmr_internal_clock_set(WS2812B_TMR);
 
     tmr_output_default_para_init(&output_config);
-    output_config.oc_mode = TMR_OUTPUT_CONTROL_PWM_MODE_A;
+    output_config.oc_mode         = TMR_OUTPUT_CONTROL_PWM_MODE_A;
     output_config.oc_output_state = TRUE;
-    output_config.oc_polarity = TMR_OUTPUT_ACTIVE_HIGH;
-    output_config.oc_idle_state = FALSE;
+    output_config.oc_polarity     = TMR_OUTPUT_ACTIVE_HIGH;
+    output_config.oc_idle_state   = FALSE;
 
     tmr_output_channel_config(WS2812B_TMR, TMR_SELECT_CHANNEL_1, &output_config);
     tmr_output_channel_buffer_enable(WS2812B_TMR, WS2812B_TMR_CHANNEL, TRUE);
@@ -111,21 +115,23 @@ static void ws2812b_dma_start(rt_size_t slot_count)
     dma_flag_clear(WS2812B_DMA_CLR);
 
     dma_default_para_init(&dma_init_struct);
-    dma_init_struct.peripheral_base_addr = (uint32_t)&WS2812B_TMR->c1dt;
-    dma_init_struct.memory_base_addr = (uint32_t)&ws2812b_pwm_buffer[1];
-    dma_init_struct.direction = DMA_DIR_MEMORY_TO_PERIPHERAL;
-    dma_init_struct.buffer_size = (uint16_t)(slot_count - 1U);
+    dma_init_struct.peripheral_base_addr  = (uint32_t)&WS2812B_TMR->c1dt;
+    dma_init_struct.memory_base_addr      = (uint32_t)&ws2812b_pwm_buffer[1];
+    dma_init_struct.direction             = DMA_DIR_MEMORY_TO_PERIPHERAL;
+    dma_init_struct.buffer_size           = (uint16_t)(slot_count - 1U);
     dma_init_struct.peripheral_inc_enable = FALSE;
-    dma_init_struct.memory_inc_enable = TRUE;
+    dma_init_struct.memory_inc_enable     = TRUE;
     dma_init_struct.peripheral_data_width = DMA_PERIPHERAL_DATA_WIDTH_HALFWORD;
-    dma_init_struct.memory_data_width = DMA_MEMORY_DATA_WIDTH_HALFWORD;
-    dma_init_struct.loop_mode_enable = FALSE;
-    dma_init_struct.priority = DMA_PRIORITY_HIGH;
+    dma_init_struct.memory_data_width     = DMA_MEMORY_DATA_WIDTH_HALFWORD;
+    dma_init_struct.loop_mode_enable      = FALSE;
+    dma_init_struct.priority              = DMA_PRIORITY_HIGH;
     dma_init(WS2812B_DMA_CHANNEL, &dma_init_struct);
 
     tmr_counter_enable(WS2812B_TMR, FALSE);
     tmr_counter_value_set(WS2812B_TMR, 0U);
     tmr_channel_value_set(WS2812B_TMR, WS2812B_TMR_CHANNEL, ws2812b_pwm_buffer[0]);
+    tmr_event_sw_trigger(WS2812B_TMR, TMR_OVERFLOW_SWTRIG);
+    tmr_flag_clear(WS2812B_TMR, TMR_OVF_FLAG);
     dma_channel_enable(WS2812B_DMA_CHANNEL, TRUE);
     tmr_counter_enable(WS2812B_TMR, TRUE);
 }
@@ -135,6 +141,8 @@ static void ws2812b_dma_stop(void)
     tmr_counter_enable(WS2812B_TMR, FALSE);
     dma_channel_enable(WS2812B_DMA_CHANNEL, FALSE);
     tmr_channel_value_set(WS2812B_TMR, WS2812B_TMR_CHANNEL, 0U);
+    tmr_event_sw_trigger(WS2812B_TMR, TMR_OVERFLOW_SWTRIG);
+    tmr_flag_clear(WS2812B_TMR, TMR_OVF_FLAG);
     dma_flag_clear(WS2812B_DMA_CLR);
 }
 
@@ -185,9 +193,9 @@ int drv_ws2812b_write_rgb(const ws2812b_rgb_t *pixels, rt_size_t count)
 int drv_ws2812b_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
     const ws2812b_rgb_t pixel = {
-        .red = red,
+        .red   = red,
         .green = green,
-        .blue = blue,
+        .blue  = blue,
     };
 
     return drv_ws2812b_write_rgb(&pixel, 1U);
