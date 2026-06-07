@@ -1,0 +1,29 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "host-test",
+            "displayName": "Host C Logic Tests",
+            "binaryDir": "${sourceDir}/../build/host-test",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "host-test",
+            "configurePreset": "host-test"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "host-test",
+            "configurePreset": "host-test",
+            "output": {
+                "outputOnFailure": true
+            }
+        }
+    ]
+}

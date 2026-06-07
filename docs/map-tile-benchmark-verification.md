@@ -10,15 +10,22 @@ checks can only verify that the benchmark path, map semantics, and
 instrumentation are present; FPS and resource claims must be measured on the
 AT32F403A target with the ST7789 LCD path active.
 
-## Host Static Check
+## Host Checks
 
-Run this from the repository root:
+The former Python static check for this benchmark has been retired. The active
+PC-side test lane now lives under `Test/` and covers compiled C logic that can
+run before flashing:
 
 ```sh
-python3 Test/map_tile_benchmark_static_check.py
+cmake -S Test -B build/host-test
+cmake --build build/host-test
+ctest --test-dir build/host-test --output-on-failure
 ```
 
-The check passes when:
+Those host tests do not preserve the old benchmark source-contract assertions.
+For this benchmark, keep using the firmware build and on-target measurement
+checks below. Review these contracts manually when changing the LVGL benchmark
+path:
 
 - `Y_TRACE_ENABLE_LVGL` defaults on and the `debug` preset enables it.
 - The benchmark keeps the 240x320 target geometry.
