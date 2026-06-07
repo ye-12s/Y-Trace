@@ -8,6 +8,7 @@
  */
 
 #include "Drivers/drv_uart.h"
+#include "Drivers/drv_rtt.h"
 #include <rthw.h>
 #include <rtconfig.h>
 // #include <Drivers/drv_uart.h>
@@ -29,6 +30,16 @@ RT_WEAK char rt_hw_console_getchar(void)
 void rt_hw_console_output(const char *str)
 {
     rt_size_t i = 0, size = 0;
+
+#ifdef Y_TRACE_USING_RTT_CONSOLE
+    ytrace_rtt_write_string(str);
+#endif
+
+    if (!shell_uart_is_initialized())
+    {
+        return;
+    }
+
     size = rt_strlen(str);
     for (i = 0; i < size; i++)
     {
@@ -41,4 +52,3 @@ void rt_hw_console_output(const char *str)
 }
 
 #endif /* RT_USING_FINSH */
-

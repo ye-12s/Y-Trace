@@ -17,10 +17,12 @@ set(Y_TRACE_SOURCES
     Board/Drivers/drv_lis3mdltr.c
     Board/Drivers/drv_lsm6dsm.c
     Board/Drivers/drv_pin.c
+    Board/Drivers/drv_rtt.c
     Board/Drivers/drv_sram.c
     Board/Drivers/drv_sdio.c
     Board/Drivers/drv_soft_iic.c
     Board/Drivers/drv_uart.c
+    Board/Drivers/drv_ws2812b.c
     cmake/newlib_heap_bridge.c
 
     libraries/cmsis/cm4/device_support/system_at32f403a_407.c

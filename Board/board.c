@@ -1,5 +1,6 @@
 #include "board.h"
 #include <rtthread.h>
+#include "Drivers/drv_rtt.h"
 #include "Drivers/drv_uart.h"
 #include "at32f403a_407.h"
 
@@ -114,6 +115,8 @@ void rt_hw_board_init()
     systick_clock_source_config(SYSTICK_CLOCK_SOURCE_AHBCLK_NODIV);
     SysTick_Config(SystemCoreClock / RT_TICK_PER_SECOND);
     nvic_irq_enable(SysTick_IRQn, 0, 0);
+
+    ytrace_rtt_init();
 
     /* Call components board initial (use INIT_BOARD_EXPORT()) */
 #ifdef RT_USING_COMPONENTS_INIT

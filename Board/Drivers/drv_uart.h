@@ -11,6 +11,8 @@ extern "C" {
 
 int shell_uart_init(int baudrate);
 
+int shell_uart_is_initialized(void);
+
 void shell_uart_putc(int ch);
 
 char shell_uart_getc(void);

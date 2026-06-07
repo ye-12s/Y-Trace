@@ -83,4 +83,8 @@
 #define RT_USING_ULOG
 #define DBG_ENABLE
 
+//Enable J-Link RTT output for RT-Thread console and ulog.
+#define Y_TRACE_USING_RTT_CONSOLE
+#define Y_TRACE_RTT_UP_BUFFER_SIZE 1024U
+
 #endif

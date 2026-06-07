@@ -1,4 +1,5 @@
 #include <reent.h>
+#include <rthw.h>
 #include <rtthread.h>
 #include <stdio.h>
 #include <string.h>
@@ -92,6 +93,20 @@ __attribute__((used)) int _read(int file, char *ptr, int len)
 
 __attribute__((used)) int _write(int file, char *ptr, int len)
 {
+    int i;
+
+    (void)file;
+    if (ptr == RT_NULL || len <= 0)
+    {
+        return 0;
+    }
+
+    for (i = 0; i < len; i++)
+    {
+        char ch[2] = {ptr[i], '\0'};
+        rt_hw_console_output(ch);
+    }
+
     return len;
 }
 
@@ -109,4 +124,3 @@ __attribute__((used)) int _getpid(void)
 {
     return 1;
 }
-

@@ -45,6 +45,11 @@ int shell_uart_init(int baudrate)
     return 0;
 }
 
+int shell_uart_is_initialized(void)
+{
+    return shell_uart_ringbuffer != NULL && shell_uart_sem != NULL;
+}
+
 void shell_uart_putc(int ch)
 {
     while (usart_flag_get(USART1, USART_TDBE_FLAG) == RESET);
@@ -83,6 +88,5 @@ void USART1_IRQHandler(void)
     }
     rt_interrupt_leave();
 }
-
 
 
