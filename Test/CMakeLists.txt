@@ -35,6 +35,16 @@ target_include_directories(test_ytrace_map_tiles PRIVATE ${Y_TRACE_APP_DIR})
 target_compile_options(test_ytrace_map_tiles PRIVATE -Wall -Wextra)
 target_link_libraries(test_ytrace_map_tiles PRIVATE unity)
 add_test(NAME test_ytrace_map_tiles COMMAND test_ytrace_map_tiles)
+
+add_executable(test_vfs_core
+    test_vfs_core.c
+    ../Application/storage/vfs.c
+)
+target_include_directories(test_vfs_core PRIVATE ${Y_TRACE_APP_DIR})
+target_compile_options(test_vfs_core PRIVATE -Wall -Wextra)
+target_link_libraries(test_vfs_core PRIVATE unity)
+add_test(NAME test_vfs_core COMMAND test_vfs_core)
+
 add_executable(test_ws2812b_driver_contract
     test_ws2812b_driver_contract.c
 )
