@@ -322,6 +322,26 @@ static void test_firmware_uses_224k_as_regular_ram(void)
     TEST_ASSERT_NOT_NULL(strstr(linker, "RAM (rw)        : ORIGIN = 0x20000000, LENGTH = 224K"));
 }
 
+static void test_linker_marks_flash_load_segment_rx_only(void)
+{
+    FILE *linker_file = fopen(Y_TRACE_LINKER_SCRIPT_PATH, "rb");
+    char linker[12000] = {0};
+
+    TEST_ASSERT_NOT_NULL(linker_file);
+    TEST_ASSERT_GREATER_THAN_UINT32(0U, fread(linker, 1U, sizeof(linker) - 1U, linker_file));
+    fclose(linker_file);
+
+    TEST_ASSERT_NOT_NULL(strstr(linker, "PHDRS"));
+    TEST_ASSERT_NOT_NULL(strstr(linker, "flash PT_LOAD FLAGS(5)"));
+    TEST_ASSERT_NOT_NULL(strstr(linker, "ram PT_LOAD FLAGS(6)"));
+    TEST_ASSERT_NOT_NULL(strstr(linker, "} >FLASH :flash"));
+    TEST_ASSERT_NOT_NULL(strstr(linker, "} >RAM AT> FLASH :ram"));
+    TEST_ASSERT_NOT_NULL(strstr(linker, "} >RAM :ram"));
+    TEST_ASSERT_NOT_NULL(strstr(linker, "} >RAM :NONE"));
+    TEST_ASSERT_NOT_NULL(strstr(linker, ".bss (NOLOAD)"));
+    TEST_ASSERT_NOT_NULL(strstr(linker, "._user_heap_stack (NOLOAD)"));
+}
+
 static void test_startup_enables_224k_sram_before_using_high_stack(void)
 {
     FILE *startup_file = fopen(Y_TRACE_STARTUP_SOURCE_PATH, "rb");
@@ -382,6 +402,7 @@ int main(void)
     RUN_TEST(test_sdio_command_response_waits_are_bounded);
     RUN_TEST(test_littlefs_uses_reserved_upper_flash_half);
     RUN_TEST(test_firmware_uses_224k_as_regular_ram);
+    RUN_TEST(test_linker_marks_flash_load_segment_rx_only);
     RUN_TEST(test_startup_enables_224k_sram_before_using_high_stack);
     RUN_TEST(test_littlefs_backend_is_real_and_built);
     return UNITY_END();
