@@ -32,8 +32,8 @@ static int mock_open(void *ctx, vfs_file_t *file, const char *path, uint32_t fla
 {
     mock_backend_ctx_t *mock = (mock_backend_ctx_t *)ctx;
     mock->open_count++;
-    mock->last_path = path;
-    mock->last_flags = flags;
+    mock->last_path   = path;
+    mock->last_flags  = flags;
     file->backend_ctx = ctx;
     return VFS_OK;
 }
@@ -41,7 +41,7 @@ static int mock_open(void *ctx, vfs_file_t *file, const char *path, uint32_t fla
 static int mock_read(vfs_file_t *file, void *buffer, uint32_t size, uint32_t *bytes_read)
 {
     mock_backend_ctx_t *mock = (mock_backend_ctx_t *)file->backend_ctx;
-    uint32_t count = mock->storage_len < size ? mock->storage_len : size;
+    uint32_t count           = mock->storage_len < size ? mock->storage_len : size;
     for (uint32_t i = 0; i < count; i++) {
         ((char *)buffer)[i] = mock->storage[i];
     }
@@ -53,12 +53,12 @@ static int mock_read(vfs_file_t *file, void *buffer, uint32_t size, uint32_t *by
 static int mock_write(vfs_file_t *file, const void *buffer, uint32_t size, uint32_t *bytes_written)
 {
     mock_backend_ctx_t *mock = (mock_backend_ctx_t *)file->backend_ctx;
-    uint32_t count = size < sizeof(mock->storage) ? size : sizeof(mock->storage);
+    uint32_t count           = size < sizeof(mock->storage) ? size : sizeof(mock->storage);
     for (uint32_t i = 0; i < count; i++) {
         mock->storage[i] = ((const char *)buffer)[i];
     }
     mock->storage_len = count;
-    *bytes_written = count;
+    *bytes_written    = count;
     mock->write_count++;
     return count == size ? VFS_OK : VFS_ERR_NO_SPACE;
 }
@@ -97,22 +97,22 @@ static int mock_stat(void *ctx, const char *path, vfs_stat_t *stat)
     mock_backend_ctx_t *mock = (mock_backend_ctx_t *)ctx;
     mock->stat_count++;
     mock->last_path = path;
-    stat->size = mock->storage_len;
-    stat->is_dir = 0U;
+    stat->size      = mock->storage_len;
+    stat->is_dir    = 0U;
     return VFS_OK;
 }
 
 static const vfs_backend_t mock_backend = {
-    .name = "mock",
-    .mount = mock_mount,
-    .open = mock_open,
-    .read = mock_read,
-    .write = mock_write,
-    .sync = mock_sync,
-    .close = mock_close,
+    .name   = "mock",
+    .mount  = mock_mount,
+    .open   = mock_open,
+    .read   = mock_read,
+    .write  = mock_write,
+    .sync   = mock_sync,
+    .close  = mock_close,
     .delete = mock_delete,
     .rename = mock_rename,
-    .stat = mock_stat,
+    .stat   = mock_stat,
 };
 
 void setUp(void)
@@ -149,8 +149,8 @@ static void test_vfs_cache_flag_uses_policy_bit_range(void)
 static void test_vfs_direct_open_dispatches_to_longest_mount_prefix(void)
 {
     mock_backend_ctx_t root_ctx = {0};
-    mock_backend_ctx_t log_ctx = {0};
-    vfs_file_t file = {0};
+    mock_backend_ctx_t log_ctx  = {0};
+    vfs_file_t file             = {0};
 
     TEST_ASSERT_EQUAL_INT(VFS_OK, vfs_init());
     TEST_ASSERT_EQUAL_INT(VFS_OK, vfs_register_backend(&mock_backend));
@@ -168,10 +168,10 @@ static void test_vfs_direct_open_dispatches_to_longest_mount_prefix(void)
 static void test_vfs_direct_file_operations_forward_to_backend(void)
 {
     mock_backend_ctx_t ctx = {0};
-    vfs_file_t file = {0};
-    char read_buffer[8] = {0};
-    uint32_t count = 0U;
-    vfs_stat_t stat = {0};
+    vfs_file_t file        = {0};
+    char read_buffer[8]    = {0};
+    uint32_t count         = 0U;
+    vfs_stat_t stat        = {0};
 
     TEST_ASSERT_EQUAL_INT(VFS_OK, vfs_init());
     TEST_ASSERT_EQUAL_INT(VFS_OK, vfs_register_backend(&mock_backend));
@@ -198,7 +198,7 @@ static void test_vfs_direct_file_operations_forward_to_backend(void)
 
 static void test_vfs_rejects_missing_mount_and_long_paths(void)
 {
-    vfs_file_t file = {0};
+    vfs_file_t file        = {0};
     const char long_path[] = "/sd/abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijk";
 
     TEST_ASSERT_EQUAL_INT(VFS_OK, vfs_init());
@@ -208,9 +208,9 @@ static void test_vfs_rejects_missing_mount_and_long_paths(void)
 
 static void test_vfs_fatfs_backend_source_preserves_error_mapping_boundary(void)
 {
-    FILE *file = fopen(Y_TRACE_VFS_FATFS_SOURCE_PATH, "rb");
+    FILE *file        = fopen(Y_TRACE_VFS_FATFS_SOURCE_PATH, "rb");
     char buffer[4096] = {0};
-    size_t read_len = 0U;
+    size_t read_len   = 0U;
 
     TEST_ASSERT_NOT_NULL(file);
     read_len = fread(buffer, 1U, sizeof(buffer) - 1U, file);
@@ -226,7 +226,7 @@ static void test_vfs_fatfs_backend_source_preserves_error_mapping_boundary(void)
 
 static void test_vfs_selftest_exposes_command_and_autorun_gate(void)
 {
-    FILE *source_file = fopen(Y_TRACE_VFS_SELFTEST_SOURCE_PATH, "rb");
+    FILE *source_file  = fopen(Y_TRACE_VFS_SELFTEST_SOURCE_PATH, "rb");
     FILE *options_file = fopen(Y_TRACE_CMAKE_OPTIONS_PATH, "rb");
     FILE *sources_file = fopen(Y_TRACE_CMAKE_SOURCES_PATH, "rb");
     char source[20000] = {0};
@@ -246,14 +246,19 @@ static void test_vfs_selftest_exposes_command_and_autorun_gate(void)
     TEST_ASSERT_NOT_NULL(strstr(source, "MSH_CMD_EXPORT(vfs_selftest"));
     TEST_ASSERT_NOT_NULL(strstr(source, "Y_TRACE_VFS_SELFTEST_AUTORUN"));
     TEST_ASSERT_NOT_NULL(strstr(source, "Y_TRACE_VFS_SELFTEST_SD_AUTORUN"));
+    TEST_ASSERT_NOT_NULL(strstr(source, "Y_TRACE_VFS_SELFTEST_FLASH_AUTORUN"));
     TEST_ASSERT_NOT_NULL(strstr(source, "INIT_APP_EXPORT(vfs_selftest_autorun"));
     TEST_ASSERT_NOT_NULL(strstr(source, "INIT_COMPONENT_EXPORT(vfs_selftest_sd_autorun"));
+    TEST_ASSERT_NOT_NULL(strstr(source, "INIT_COMPONENT_EXPORT(vfs_selftest_flash_autorun"));
     TEST_ASSERT_NOT_NULL(strstr(source, "VFS_SELFTEST FAIL phase=sd_open_write"));
+    TEST_ASSERT_NOT_NULL(strstr(source, "VFS_SELFTEST PASS phase=flash_direct"));
     TEST_ASSERT_NOT_NULL(strstr(source, "VFS_SELFTEST PASS"));
     TEST_ASSERT_NOT_NULL(strstr(options, "option(Y_TRACE_VFS_SELFTEST_AUTORUN"));
     TEST_ASSERT_NOT_NULL(strstr(options, "option(Y_TRACE_VFS_SELFTEST_SD_AUTORUN"));
+    TEST_ASSERT_NOT_NULL(strstr(options, "option(Y_TRACE_VFS_SELFTEST_FLASH_AUTORUN"));
     TEST_ASSERT_NOT_NULL(strstr(options, "Y_TRACE_VFS_SELFTEST_AUTORUN"));
     TEST_ASSERT_NOT_NULL(strstr(options, "Y_TRACE_VFS_SELFTEST_SD_AUTORUN"));
+    TEST_ASSERT_NOT_NULL(strstr(options, "Y_TRACE_VFS_SELFTEST_FLASH_AUTORUN"));
     TEST_ASSERT_NOT_NULL(strstr(sources, "Application/storage/vfs_selftest.c"));
 }
 
@@ -274,6 +279,52 @@ static void test_sdio_command_response_waits_are_bounded(void)
     TEST_ASSERT_NULL(strstr(buffer, "while (1)"));
 }
 
+static void test_littlefs_uses_reserved_upper_flash_half(void)
+{
+    FILE *flash_file  = fopen(Y_TRACE_DRV_FLASH_HEADER_PATH, "rb");
+    FILE *linker_file = fopen(Y_TRACE_LINKER_SCRIPT_PATH, "rb");
+    char flash[4096]  = {0};
+    char linker[4096] = {0};
+
+    TEST_ASSERT_NOT_NULL(flash_file);
+    TEST_ASSERT_NOT_NULL(linker_file);
+    TEST_ASSERT_GREATER_THAN_UINT32(0U, fread(flash, 1U, sizeof(flash) - 1U, flash_file));
+    TEST_ASSERT_GREATER_THAN_UINT32(0U, fread(linker, 1U, sizeof(linker) - 1U, linker_file));
+    fclose(flash_file);
+    fclose(linker_file);
+
+    TEST_ASSERT_NOT_NULL(strstr(flash, "FLASH_FILESYSTEM_START_ADDR"));
+    TEST_ASSERT_NOT_NULL(strstr(flash, "FLASH_BASE_ADDR + SECTOR_SIZE * 256"));
+    TEST_ASSERT_NOT_NULL(strstr(flash, "FLASH_FILESYSTEM_SIZE"));
+    TEST_ASSERT_NOT_NULL(strstr(flash, "SECTOR_SIZE * 256"));
+    TEST_ASSERT_NOT_NULL(strstr(linker, "FLASH (rx)      : ORIGIN = 0x08000000, LENGTH = 512K"));
+}
+
+static void test_littlefs_backend_is_real_and_built(void)
+{
+    FILE *backend_file  = fopen(Y_TRACE_VFS_LITTLEFS_SOURCE_PATH, "rb");
+    FILE *sources_file  = fopen(Y_TRACE_CMAKE_SOURCES_PATH, "rb");
+    char backend[20000] = {0};
+    char sources[4096]  = {0};
+
+    TEST_ASSERT_NOT_NULL(backend_file);
+    TEST_ASSERT_NOT_NULL(sources_file);
+    TEST_ASSERT_GREATER_THAN_UINT32(0U, fread(backend, 1U, sizeof(backend) - 1U, backend_file));
+    TEST_ASSERT_GREATER_THAN_UINT32(0U, fread(sources, 1U, sizeof(sources) - 1U, sources_file));
+    fclose(backend_file);
+    fclose(sources_file);
+
+    TEST_ASSERT_NOT_NULL(strstr(sources, "Middlewares/littlefs/lfs.c"));
+    TEST_ASSERT_NOT_NULL(strstr(sources, "Middlewares/littlefs/lfs_util.c"));
+    TEST_ASSERT_NOT_NULL(strstr(backend, "lfs_mount"));
+    TEST_ASSERT_NOT_NULL(strstr(backend, "lfs_format"));
+    TEST_ASSERT_NOT_NULL(strstr(backend, "lfs_file_open"));
+    TEST_ASSERT_NOT_NULL(strstr(backend, "lfs_file_read"));
+    TEST_ASSERT_NOT_NULL(strstr(backend, "lfs_file_write"));
+    TEST_ASSERT_NOT_NULL(strstr(backend, "lfs_remove"));
+    TEST_ASSERT_NULL(strstr(backend, "littlefs_not_ready"));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -286,5 +337,7 @@ int main(void)
     RUN_TEST(test_vfs_fatfs_backend_source_preserves_error_mapping_boundary);
     RUN_TEST(test_vfs_selftest_exposes_command_and_autorun_gate);
     RUN_TEST(test_sdio_command_response_waits_are_bounded);
+    RUN_TEST(test_littlefs_uses_reserved_upper_flash_half);
+    RUN_TEST(test_littlefs_backend_is_real_and_built);
     return UNITY_END();
 }

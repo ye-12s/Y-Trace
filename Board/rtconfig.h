@@ -25,7 +25,7 @@
 #define RT_USING_USER_MAIN
 
 //main线程堆栈大小
-#define RT_MAIN_THREAD_STACK_SIZE     1024
+#define RT_MAIN_THREAD_STACK_SIZE     4096
 
 //使能rtthread的内核LOG功能
 //#define RT_DEBUG
@@ -34,7 +34,7 @@
 #define RT_DEBUG_INIT 0
 
 //使能rtthread的堆栈溢出检测
-//#define RT_USING_OVERFLOW_CHECK
+#define RT_USING_OVERFLOW_CHECK
 
 //使能rtthread的钩子函数
 //#define RT_USING_HOOK

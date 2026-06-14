@@ -14,12 +14,19 @@
 #define LOG_LVL LOG_LVL_DBG
 #include "ulog.h"
 
+#if defined(Y_TRACE_VFS_SELFTEST_SD_AUTORUN) || defined(Y_TRACE_VFS_SELFTEST_FLASH_AUTORUN)
+#define APP_STORAGE_SELFTEST_AUTORUN 1
+#else
+#define APP_STORAGE_SELFTEST_AUTORUN 0
+#endif
+
 static struct _soft_i2c_bus sensor_i2c_bus;
 static const pin_t PIN_SENSOR_I2C_SCL  = GET_PIN(A, 8);
 static const pin_t PIN_SENSOR_I2C_SDA  = GET_PIN(C, 9);
 static const pin_t PIN_SENSOR_IMU_INT1 = GET_PIN(C, 7);
 static const pin_t PIN_SENSOR_IMU_INT2 = GET_PIN(C, 8);
 
+#if APP_STORAGE_SELFTEST_AUTORUN == 0
 #define WS2812B_COLOR_STEP_MS 1000U
 
 static const ws2812b_rgb_t ws2812b_color_cycle[] = {
@@ -63,6 +70,7 @@ static int app_ws2812b_liuli_start(void)
     rt_thread_startup(thread);
     return RT_EOK;
 }
+#endif
 
 static int bsp_init(void)
 {
@@ -87,8 +95,8 @@ INIT_COMPONENT_EXPORT(lcd_init);
 
 static int app_init(void)
 {
-#ifdef Y_TRACE_VFS_SELFTEST_SD_AUTORUN
-    LOG_I("Application services skipped for VFS SD self-test.");
+#if APP_STORAGE_SELFTEST_AUTORUN != 0
+    LOG_I("Application services skipped for VFS storage self-test.");
     return 0;
 #else
 #ifdef Y_TRACE_ENABLE_LVGL

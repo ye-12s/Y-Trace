@@ -5,6 +5,7 @@ option(Y_TRACE_IMU_TEST_AUTORUN "Autorun the non-destructive IMU service smoke t
 option(Y_TRACE_IMU_MONITOR_AUTORUN "Autorun continuous IMU monitor output at boot for lab measurement" OFF)
 option(Y_TRACE_VFS_SELFTEST_AUTORUN "Autorun the non-destructive VFS framework self-test at boot for lab measurement" OFF)
 option(Y_TRACE_VFS_SELFTEST_SD_AUTORUN "Autorun the physical SD-card VFS self-test at boot for lab measurement" OFF)
+option(Y_TRACE_VFS_SELFTEST_FLASH_AUTORUN "Autorun the physical flash LittleFS VFS self-test at boot for lab measurement" OFF)
 
 set(Y_TRACE_DEFINES
     _DEBUG
@@ -68,6 +69,12 @@ endif()
 if(Y_TRACE_VFS_SELFTEST_SD_AUTORUN)
     list(APPEND Y_TRACE_DEFINES
         Y_TRACE_VFS_SELFTEST_SD_AUTORUN
+    )
+endif()
+
+if(Y_TRACE_VFS_SELFTEST_FLASH_AUTORUN)
+    list(APPEND Y_TRACE_DEFINES
+        Y_TRACE_VFS_SELFTEST_FLASH_AUTORUN
     )
 endif()
 

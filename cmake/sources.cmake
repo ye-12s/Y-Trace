@@ -63,6 +63,8 @@ set(Y_TRACE_SOURCES
     Middlewares/fatfs/source/ff.c
     Middlewares/fatfs/source/ffsystem.c
     Middlewares/fatfs/source/ffunicode.c
+    Middlewares/littlefs/lfs.c
+    Middlewares/littlefs/lfs_util.c
     Middlewares/rt-thread/components/finsh/cmd.c
     Middlewares/rt-thread/components/finsh/finsh_port.c
     Middlewares/rt-thread/components/finsh/msh.c

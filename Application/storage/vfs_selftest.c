@@ -49,7 +49,7 @@ static vfs_selftest_entry_t *vfs_selftest_alloc_entry(vfs_selftest_backend_ctx_t
             ctx->entries[i].exists = 1U;
             (void)strncpy(ctx->entries[i].path, path, VFS_PATH_MAX - 1U);
             ctx->entries[i].path[VFS_PATH_MAX - 1U] = '\0';
-            ctx->entries[i].size = 0U;
+            ctx->entries[i].size                    = 0U;
             return &ctx->entries[i];
         }
     }
@@ -70,8 +70,8 @@ static vfs_selftest_open_t *vfs_selftest_alloc_open(vfs_selftest_backend_ctx_t *
 static int vfs_selftest_mock_open(void *backend_ctx, vfs_file_t *file, const char *path, uint32_t flags)
 {
     vfs_selftest_backend_ctx_t *ctx = (vfs_selftest_backend_ctx_t *)backend_ctx;
-    vfs_selftest_entry_t *entry = vfs_selftest_find_entry(ctx, path);
-    vfs_selftest_open_t *open = RT_NULL;
+    vfs_selftest_entry_t *entry     = vfs_selftest_find_entry(ctx, path);
+    vfs_selftest_open_t *open       = RT_NULL;
 
     if (entry == RT_NULL) {
         if ((flags & VFS_O_CREATE) == 0U) {
@@ -92,8 +92,8 @@ static int vfs_selftest_mock_open(void *backend_ctx, vfs_file_t *file, const cha
         return VFS_ERR_BUSY;
     }
 
-    open->entry = entry;
-    open->pos = (flags & VFS_O_APPEND) != 0U ? entry->size : 0U;
+    open->entry        = entry;
+    open->pos          = (flags & VFS_O_APPEND) != 0U ? entry->size : 0U;
     file->backend_file = open;
     return VFS_OK;
 }
@@ -109,7 +109,7 @@ static int vfs_selftest_mock_read(vfs_file_t *file, void *buffer, uint32_t size,
     }
 
     available = open->entry->size - open->pos;
-    count = available < size ? available : size;
+    count     = available < size ? available : size;
     (void)memcpy(buffer, &open->entry->data[open->pos], count);
     open->pos += count;
     *bytes_read = count;
@@ -147,9 +147,9 @@ static int vfs_selftest_mock_close(vfs_file_t *file)
     if (open == RT_NULL) {
         return VFS_ERR_INVALID;
     }
-    open->used = 0U;
-    open->entry = RT_NULL;
-    open->pos = 0U;
+    open->used         = 0U;
+    open->entry        = RT_NULL;
+    open->pos          = 0U;
     file->backend_file = RT_NULL;
     return VFS_OK;
 }
@@ -184,21 +184,21 @@ static int vfs_selftest_mock_stat(void *backend_ctx, const char *path, vfs_stat_
     if (entry == RT_NULL) {
         return VFS_ERR_NOT_FOUND;
     }
-    stat->size = entry->size;
+    stat->size   = entry->size;
     stat->is_dir = 0U;
     return VFS_OK;
 }
 
 static const vfs_backend_t vfs_selftest_backend = {
-    .name = "selftest",
-    .open = vfs_selftest_mock_open,
-    .read = vfs_selftest_mock_read,
-    .write = vfs_selftest_mock_write,
-    .sync = vfs_selftest_mock_sync,
-    .close = vfs_selftest_mock_close,
+    .name   = "selftest",
+    .open   = vfs_selftest_mock_open,
+    .read   = vfs_selftest_mock_read,
+    .write  = vfs_selftest_mock_write,
+    .sync   = vfs_selftest_mock_sync,
+    .close  = vfs_selftest_mock_close,
     .delete = vfs_selftest_mock_delete,
     .rename = vfs_selftest_mock_rename,
-    .stat = vfs_selftest_mock_stat,
+    .stat   = vfs_selftest_mock_stat,
 };
 
 static int vfs_selftest_expect(const char *phase, int actual, int expected)
@@ -244,7 +244,7 @@ static int vfs_selftest_direct_api(void)
     vfs_file_t file;
     vfs_stat_t stat;
     char buffer[sizeof(payload)] = {0};
-    uint32_t count = 0U;
+    uint32_t count               = 0U;
     int ret;
 
     ret = vfs_open(&file, "/vt/a.txt", VFS_O_WRITE | VFS_O_CREATE | VFS_O_TRUNC);
@@ -283,14 +283,14 @@ static int vfs_selftest_direct_api(void)
 
 static int vfs_selftest_cache_api(void)
 {
-    static const char payload[] = "cache";
+    static const char payload[]     = "cache";
     const vfs_cache_config_t config = {
-        .root_path = "/vc",
-        .segment_size = 32U,
-        .high_watermark_percent = 80U,
+        .root_path                  = "/vc",
+        .segment_size               = 32U,
+        .high_watermark_percent     = 80U,
         .critical_watermark_percent = 95U,
-        .worker_priority = RT_THREAD_PRIORITY_MAX - 3,
-        .worker_stack_size = 1024U,
+        .worker_priority            = RT_THREAD_PRIORITY_MAX - 3,
+        .worker_stack_size          = 1024U,
     };
     vfs_file_t file;
     uint32_t count = 0U;
@@ -335,7 +335,7 @@ static int vfs_selftest_error_api(void)
     ret = vfs_open(&file, long_path, VFS_O_READ);
     if (vfs_selftest_expect("long_path", ret, VFS_ERR_PATH_TOO_LONG) != 0) return -1;
     ret = vfs_open(&file, "/flash/notready.bin", VFS_O_READ);
-    if (vfs_selftest_expect("littlefs_skeleton", ret, VFS_ERR_NOT_SUPPORTED) != 0) return -1;
+    if (vfs_selftest_expect("littlefs_missing", ret, VFS_ERR_NOT_FOUND) != 0) return -1;
     ret = vfs_rename("/vt/nope", "/vc/nope");
     if (vfs_selftest_expect("cross_mount_rename", ret, VFS_ERR_NOT_SUPPORTED) != 0) return -1;
     ret = vfs_stat("/vt/nope", &stat);
@@ -350,7 +350,7 @@ static int vfs_selftest_sd_api(void)
     vfs_file_t file;
     vfs_stat_t stat;
     char buffer[sizeof(payload)] = {0};
-    uint32_t count = 0U;
+    uint32_t count               = 0U;
     int ret;
 
     ret = vfs_open(&file, "/sd/VFSTST.TXT", VFS_O_WRITE | VFS_O_CREATE | VFS_O_TRUNC);
@@ -386,9 +386,53 @@ static int vfs_selftest_sd_api(void)
     return 0;
 }
 
+static int vfs_selftest_flash_api(void)
+{
+    static const char payload[] = "flash-vfs";
+    vfs_file_t file;
+    vfs_stat_t stat;
+    char buffer[sizeof(payload)] = {0};
+    uint32_t count               = 0U;
+    int ret;
+
+    (void)vfs_delete("/flash/VFSTST2.BIN");
+    (void)vfs_delete("/flash/VFSTST.BIN");
+
+    ret = vfs_open(&file, "/flash/VFSTST.BIN", VFS_O_WRITE | VFS_O_CREATE | VFS_O_TRUNC);
+    if (vfs_selftest_expect("flash_open_write", ret, VFS_OK) != 0) return -1;
+    ret = vfs_write(&file, payload, (uint32_t)strlen(payload), &count);
+    if (vfs_selftest_expect("flash_write", ret, VFS_OK) != 0) return -1;
+    if (count != strlen(payload)) return vfs_selftest_expect("flash_write_count", (int)count, (int)strlen(payload));
+    ret = vfs_sync(&file);
+    if (vfs_selftest_expect("flash_sync", ret, VFS_OK) != 0) return -1;
+    ret = vfs_close(&file);
+    if (vfs_selftest_expect("flash_close_write", ret, VFS_OK) != 0) return -1;
+    ret = vfs_stat("/flash/VFSTST.BIN", &stat);
+    if (vfs_selftest_expect("flash_stat", ret, VFS_OK) != 0) return -1;
+    if (stat.size != strlen(payload)) return vfs_selftest_expect("flash_stat_size", (int)stat.size, (int)strlen(payload));
+    ret = vfs_rename("/flash/VFSTST.BIN", "/flash/VFSTST2.BIN");
+    if (vfs_selftest_expect("flash_rename", ret, VFS_OK) != 0) return -1;
+    ret = vfs_open(&file, "/flash/VFSTST2.BIN", VFS_O_READ);
+    if (vfs_selftest_expect("flash_open_read", ret, VFS_OK) != 0) return -1;
+    ret = vfs_read(&file, buffer, sizeof(buffer), &count);
+    if (vfs_selftest_expect("flash_read", ret, VFS_OK) != 0) return -1;
+    if (count != strlen(payload) || memcmp(buffer, payload, strlen(payload)) != 0) {
+        rt_kprintf("VFS_SELFTEST FAIL phase=flash_read_data count=%lu\n", (unsigned long)count);
+        return -1;
+    }
+    ret = vfs_close(&file);
+    if (vfs_selftest_expect("flash_close_read", ret, VFS_OK) != 0) return -1;
+    ret = vfs_delete("/flash/VFSTST2.BIN");
+    if (vfs_selftest_expect("flash_delete", ret, VFS_OK) != 0) return -1;
+
+    rt_kprintf("VFS_SELFTEST PASS phase=flash_direct\n");
+    return 0;
+}
+
 static int vfs_selftest(int argc, char **argv)
 {
-    uint8_t run_sd = (argc > 1 && argv != RT_NULL && argv[1] != RT_NULL && strcmp(argv[1], "sd") == 0) ? 1U : 0U;
+    uint8_t run_sd    = (argc > 1 && argv != RT_NULL && argv[1] != RT_NULL && strcmp(argv[1], "sd") == 0) ? 1U : 0U;
+    uint8_t run_flash = (argc > 1 && argv != RT_NULL && argv[1] != RT_NULL && strcmp(argv[1], "flash") == 0) ? 1U : 0U;
 
     rt_kprintf("VFS_SELFTEST begin\n");
 
@@ -397,11 +441,12 @@ static int vfs_selftest(int argc, char **argv)
     if (vfs_selftest_cache_api() != 0) return -1;
     if (vfs_selftest_error_api() != 0) return -1;
     if (run_sd != 0U && vfs_selftest_sd_api() != 0) return -1;
+    if (run_flash != 0U && vfs_selftest_flash_api() != 0) return -1;
 
     rt_kprintf("VFS_SELFTEST PASS\n");
     return 0;
 }
-MSH_CMD_EXPORT(vfs_selftest, run VFS framework self-test; use 'vfs_selftest sd' for physical SD path);
+MSH_CMD_EXPORT(vfs_selftest, run VFS framework self-test; use 'vfs_selftest sd' or 'vfs_selftest flash' for physical paths);
 
 #ifdef Y_TRACE_VFS_SELFTEST_AUTORUN
 static int vfs_selftest_autorun(void)
@@ -418,4 +463,13 @@ static int vfs_selftest_sd_autorun(void)
     return vfs_selftest(2, argv);
 }
 INIT_COMPONENT_EXPORT(vfs_selftest_sd_autorun);
+#endif
+
+#ifdef Y_TRACE_VFS_SELFTEST_FLASH_AUTORUN
+static int vfs_selftest_flash_autorun(void)
+{
+    char *argv[] = {"vfs_selftest", "flash"};
+    return vfs_selftest(2, argv);
+}
+INIT_COMPONENT_EXPORT(vfs_selftest_flash_autorun);
 #endif
