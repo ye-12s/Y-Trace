@@ -2,6 +2,9 @@ set(Y_TRACE_SOURCES
     Application/app_init.c
     Application/main.c
     Application/port/diskio.c
+    Application/storage/vfs.c
+    Application/storage/vfs_cache.c
+    Application/storage/vfs_fatfs.c
     Application/sample/gnss_sample.c
     Application/sample/imu_sample.c
     Application/sample/lcd_refresh_sample.c

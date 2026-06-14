@@ -1,6 +1,7 @@
 #include "storage/vfs.h"
 #include "unity.h"
 
+#include <stdio.h>
 #include <string.h>
 
 typedef struct {
@@ -205,6 +206,22 @@ static void test_vfs_rejects_missing_mount_and_long_paths(void)
     TEST_ASSERT_EQUAL_INT(VFS_ERR_PATH_TOO_LONG, vfs_open(&file, long_path, VFS_O_READ));
 }
 
+static void test_vfs_fatfs_backend_source_preserves_error_mapping_boundary(void)
+{
+    FILE *file = fopen(Y_TRACE_VFS_FATFS_SOURCE_PATH, "rb");
+    char buffer[4096] = {0};
+    size_t read_len = 0U;
+
+    TEST_ASSERT_NOT_NULL(file);
+    read_len = fread(buffer, 1U, sizeof(buffer) - 1U, file);
+    fclose(file);
+
+    TEST_ASSERT_GREATER_THAN_UINT32(0U, read_len);
+    TEST_ASSERT_NOT_NULL(strstr(buffer, "static int fatfs_result_to_vfs"));
+    TEST_ASSERT_NOT_NULL(strstr(buffer, "FR_OK"));
+    TEST_ASSERT_NOT_NULL(strstr(buffer, "VFS_ERR_IO"));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -214,5 +231,6 @@ int main(void)
     RUN_TEST(test_vfs_direct_open_dispatches_to_longest_mount_prefix);
     RUN_TEST(test_vfs_direct_file_operations_forward_to_backend);
     RUN_TEST(test_vfs_rejects_missing_mount_and_long_paths);
+    RUN_TEST(test_vfs_fatfs_backend_source_preserves_error_mapping_boundary);
     return UNITY_END();
 }

@@ -42,6 +42,8 @@ add_executable(test_vfs_core
     ../Application/storage/vfs_cache.c
 )
 target_include_directories(test_vfs_core PRIVATE ${Y_TRACE_APP_DIR})
+target_compile_definitions(test_vfs_core PRIVATE
+    Y_TRACE_VFS_FATFS_SOURCE_PATH="${PROJECT_SOURCE_DIR}/../Application/storage/vfs_fatfs.c")
 target_compile_options(test_vfs_core PRIVATE -Wall -Wextra)
 target_link_libraries(test_vfs_core PRIVATE unity)
 add_test(NAME test_vfs_core COMMAND test_vfs_core)
