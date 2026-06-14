@@ -1,4 +1,5 @@
 #include "storage/vfs.h"
+#include "storage/vfs_cache.h"
 
 #include <stddef.h>
 #include <string.h>
@@ -83,7 +84,7 @@ int vfs_init(void)
     memset(vfs_mounts, 0, sizeof(vfs_mounts));
     vfs_backend_count = 0U;
     vfs_mount_count = 0U;
-    return VFS_OK;
+    return vfs_cache_init();
 }
 
 int vfs_register_backend(const vfs_backend_t *backend)
@@ -130,8 +131,7 @@ int vfs_mount(const char *mount_path, const char *backend_name, void *backend_ct
 
 int vfs_cache_register(const vfs_cache_config_t *config)
 {
-    (void)config;
-    return VFS_ERR_NOT_SUPPORTED;
+    return vfs_cache_register_config(config);
 }
 
 int vfs_open(vfs_file_t *file, const char *path, uint32_t flags)
@@ -146,7 +146,7 @@ int vfs_open(vfs_file_t *file, const char *path, uint32_t flags)
         return ret;
     }
     if ((flags & VFS_O_CACHE) != 0U) {
-        return VFS_ERR_NOT_SUPPORTED;
+        return vfs_cache_open(file, path, flags);
     }
     mount = vfs_find_mount(path);
     if (mount == NULL) {
@@ -165,6 +165,9 @@ int vfs_open(vfs_file_t *file, const char *path, uint32_t flags)
 
 int vfs_read(vfs_file_t *file, void *buffer, uint32_t size, uint32_t *bytes_read)
 {
+    if (file != NULL && file->cached != 0U) {
+        return VFS_ERR_NOT_SUPPORTED;
+    }
     if (file == NULL || file->backend == NULL || file->backend->read == NULL || bytes_read == NULL) {
         return VFS_ERR_INVALID;
     }
@@ -173,6 +176,9 @@ int vfs_read(vfs_file_t *file, void *buffer, uint32_t size, uint32_t *bytes_read
 
 int vfs_write(vfs_file_t *file, const void *buffer, uint32_t size, uint32_t *bytes_written)
 {
+    if (file != NULL && file->cached != 0U) {
+        return vfs_cache_write(file, buffer, size, bytes_written);
+    }
     if (file == NULL || file->backend == NULL || file->backend->write == NULL || bytes_written == NULL) {
         return VFS_ERR_INVALID;
     }
@@ -181,6 +187,9 @@ int vfs_write(vfs_file_t *file, const void *buffer, uint32_t size, uint32_t *byt
 
 int vfs_sync(vfs_file_t *file)
 {
+    if (file != NULL && file->cached != 0U) {
+        return vfs_cache_sync(file);
+    }
     if (file == NULL || file->backend == NULL) {
         return VFS_ERR_INVALID;
     }
@@ -189,6 +198,9 @@ int vfs_sync(vfs_file_t *file)
 
 int vfs_close(vfs_file_t *file)
 {
+    if (file != NULL && file->cached != 0U) {
+        return vfs_cache_close(file);
+    }
     if (file == NULL || file->backend == NULL) {
         return VFS_ERR_INVALID;
     }
