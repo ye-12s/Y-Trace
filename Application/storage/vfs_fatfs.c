@@ -12,6 +12,7 @@ typedef struct {
 } vfs_fatfs_file_t;
 
 static vfs_fatfs_file_t fatfs_files[VFS_FATFS_MAX_OPEN_FILES];
+static FATFS fatfs_fs;
 
 static int fatfs_result_to_vfs(FRESULT result)
 {
@@ -65,6 +66,12 @@ static vfs_fatfs_file_t *fatfs_alloc_file(void)
         }
     }
     return NULL;
+}
+
+static int fatfs_mount(void *ctx)
+{
+    (void)ctx;
+    return fatfs_result_to_vfs(f_mount(&fatfs_fs, "0:", 0));
 }
 
 static int fatfs_open(void *ctx, vfs_file_t *file, const char *path, uint32_t flags)
@@ -146,6 +153,7 @@ static int fatfs_stat(void *ctx, const char *path, vfs_stat_t *stat)
 
 const vfs_backend_t vfs_fatfs_backend = {
     .name = "fatfs",
+    .mount = fatfs_mount,
     .open = fatfs_open,
     .read = fatfs_read,
     .write = fatfs_write,

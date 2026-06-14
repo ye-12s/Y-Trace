@@ -7,6 +7,7 @@ set(Y_TRACE_SOURCES
     Application/storage/vfs_fatfs.c
     Application/storage/vfs_littlefs.c
     Application/storage/storage_init.c
+    Application/storage/vfs_selftest.c
     Application/sample/gnss_sample.c
     Application/sample/imu_sample.c
     Application/sample/lcd_refresh_sample.c

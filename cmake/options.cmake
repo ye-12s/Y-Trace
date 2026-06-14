@@ -3,6 +3,7 @@ option(Y_TRACE_ENABLE_FATFS_SD_BENCH "Build the destructive SD-card FatFs smoke/
 option(Y_TRACE_FATFS_SD_BENCH_AUTORUN "Autorun the destructive FatFs SD-card benchmark at boot for lab measurement" OFF)
 option(Y_TRACE_IMU_TEST_AUTORUN "Autorun the non-destructive IMU service smoke test at boot for lab measurement" OFF)
 option(Y_TRACE_IMU_MONITOR_AUTORUN "Autorun continuous IMU monitor output at boot for lab measurement" OFF)
+option(Y_TRACE_VFS_SELFTEST_AUTORUN "Autorun the non-destructive VFS framework self-test at boot for lab measurement" OFF)
 
 set(Y_TRACE_DEFINES
     _DEBUG
@@ -54,6 +55,12 @@ endif()
 if(Y_TRACE_IMU_MONITOR_AUTORUN)
     list(APPEND Y_TRACE_DEFINES
         Y_TRACE_IMU_MONITOR_AUTORUN
+    )
+endif()
+
+if(Y_TRACE_VFS_SELFTEST_AUTORUN)
+    list(APPEND Y_TRACE_DEFINES
+        Y_TRACE_VFS_SELFTEST_AUTORUN
     )
 endif()
 

@@ -218,8 +218,38 @@ static void test_vfs_fatfs_backend_source_preserves_error_mapping_boundary(void)
 
     TEST_ASSERT_GREATER_THAN_UINT32(0U, read_len);
     TEST_ASSERT_NOT_NULL(strstr(buffer, "static int fatfs_result_to_vfs"));
+    TEST_ASSERT_NOT_NULL(strstr(buffer, "static FATFS"));
+    TEST_ASSERT_NOT_NULL(strstr(buffer, "f_mount"));
     TEST_ASSERT_NOT_NULL(strstr(buffer, "FR_OK"));
     TEST_ASSERT_NOT_NULL(strstr(buffer, "VFS_ERR_IO"));
+}
+
+static void test_vfs_selftest_exposes_command_and_autorun_gate(void)
+{
+    FILE *source_file = fopen(Y_TRACE_VFS_SELFTEST_SOURCE_PATH, "rb");
+    FILE *options_file = fopen(Y_TRACE_CMAKE_OPTIONS_PATH, "rb");
+    FILE *sources_file = fopen(Y_TRACE_CMAKE_SOURCES_PATH, "rb");
+    char source[20000] = {0};
+    char options[4096] = {0};
+    char sources[4096] = {0};
+
+    TEST_ASSERT_NOT_NULL(source_file);
+    TEST_ASSERT_NOT_NULL(options_file);
+    TEST_ASSERT_NOT_NULL(sources_file);
+    TEST_ASSERT_GREATER_THAN_UINT32(0U, fread(source, 1U, sizeof(source) - 1U, source_file));
+    TEST_ASSERT_GREATER_THAN_UINT32(0U, fread(options, 1U, sizeof(options) - 1U, options_file));
+    TEST_ASSERT_GREATER_THAN_UINT32(0U, fread(sources, 1U, sizeof(sources) - 1U, sources_file));
+    fclose(source_file);
+    fclose(options_file);
+    fclose(sources_file);
+
+    TEST_ASSERT_NOT_NULL(strstr(source, "MSH_CMD_EXPORT(vfs_selftest"));
+    TEST_ASSERT_NOT_NULL(strstr(source, "Y_TRACE_VFS_SELFTEST_AUTORUN"));
+    TEST_ASSERT_NOT_NULL(strstr(source, "INIT_APP_EXPORT(vfs_selftest_autorun"));
+    TEST_ASSERT_NOT_NULL(strstr(source, "VFS_SELFTEST PASS"));
+    TEST_ASSERT_NOT_NULL(strstr(options, "option(Y_TRACE_VFS_SELFTEST_AUTORUN"));
+    TEST_ASSERT_NOT_NULL(strstr(options, "Y_TRACE_VFS_SELFTEST_AUTORUN"));
+    TEST_ASSERT_NOT_NULL(strstr(sources, "Application/storage/vfs_selftest.c"));
 }
 
 int main(void)
@@ -232,5 +262,6 @@ int main(void)
     RUN_TEST(test_vfs_direct_file_operations_forward_to_backend);
     RUN_TEST(test_vfs_rejects_missing_mount_and_long_paths);
     RUN_TEST(test_vfs_fatfs_backend_source_preserves_error_mapping_boundary);
+    RUN_TEST(test_vfs_selftest_exposes_command_and_autorun_gate);
     return UNITY_END();
 }
