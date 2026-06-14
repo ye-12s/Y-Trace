@@ -300,6 +300,49 @@ static void test_littlefs_uses_reserved_upper_flash_half(void)
     TEST_ASSERT_NOT_NULL(strstr(linker, "FLASH (rx)      : ORIGIN = 0x08000000, LENGTH = 512K"));
 }
 
+static void test_firmware_uses_224k_as_regular_ram(void)
+{
+    FILE *board_file  = fopen(Y_TRACE_BOARD_HEADER_PATH, "rb");
+    FILE *linker_file = fopen(Y_TRACE_LINKER_SCRIPT_PATH, "rb");
+    char board[4096]  = {0};
+    char linker[4096] = {0};
+
+    TEST_ASSERT_NOT_NULL(board_file);
+    TEST_ASSERT_NOT_NULL(linker_file);
+    TEST_ASSERT_GREATER_THAN_UINT32(0U, fread(board, 1U, sizeof(board) - 1U, board_file));
+    TEST_ASSERT_GREATER_THAN_UINT32(0U, fread(linker, 1U, sizeof(linker) - 1U, linker_file));
+    fclose(board_file);
+    fclose(linker_file);
+
+    TEST_ASSERT_NOT_NULL(strstr(board, "#define RAM_SIZE       (224 * 1024)"));
+    TEST_ASSERT_NOT_NULL(strstr(board, "#define RAM_END        (RAM_START + RAM_SIZE)"));
+    TEST_ASSERT_NULL(strstr(board, "RAM_EXT_START"));
+    TEST_ASSERT_NULL(strstr(board, "RAM_TOTAL_SIZE"));
+    TEST_ASSERT_NOT_NULL(strstr(linker, "_estack = 0x20038000"));
+    TEST_ASSERT_NOT_NULL(strstr(linker, "RAM (rw)        : ORIGIN = 0x20000000, LENGTH = 224K"));
+}
+
+static void test_startup_enables_224k_sram_before_using_high_stack(void)
+{
+    FILE *startup_file = fopen(Y_TRACE_STARTUP_SOURCE_PATH, "rb");
+    char startup[12000] = {0};
+
+    TEST_ASSERT_NOT_NULL(startup_file);
+    TEST_ASSERT_GREATER_THAN_UINT32(0U, fread(startup, 1U, sizeof(startup) - 1U, startup_file));
+    fclose(startup_file);
+
+    TEST_ASSERT_NOT_NULL(strstr(startup, ".word  0x20018000"));
+    TEST_ASSERT_NOT_NULL(strstr(startup, "bl  EnsureSram224K"));
+    TEST_ASSERT_NOT_NULL(strstr(startup, "EnsureSram224K:"));
+    TEST_ASSERT_NOT_NULL(strstr(startup, "ldr  r0, =0x1FFFF810"));
+    TEST_ASSERT_NOT_NULL(strstr(startup, "cmp  r1, #0xFE"));
+    TEST_ASSERT_NOT_NULL(strstr(startup, "cmp  r1, #0xFF"));
+    TEST_ASSERT_NOT_NULL(strstr(startup, "strh  r1, [r0]"));
+    TEST_ASSERT_NOT_NULL(strstr(startup, "ldr  r0, =0xE000ED0C"));
+    TEST_ASSERT_NOT_NULL(strstr(startup, "ldr  r1, =0x05FA0004"));
+    TEST_ASSERT_NOT_NULL(strstr(startup, "msr  msp, r0"));
+}
+
 static void test_littlefs_backend_is_real_and_built(void)
 {
     FILE *backend_file  = fopen(Y_TRACE_VFS_LITTLEFS_SOURCE_PATH, "rb");
@@ -338,6 +381,8 @@ int main(void)
     RUN_TEST(test_vfs_selftest_exposes_command_and_autorun_gate);
     RUN_TEST(test_sdio_command_response_waits_are_bounded);
     RUN_TEST(test_littlefs_uses_reserved_upper_flash_half);
+    RUN_TEST(test_firmware_uses_224k_as_regular_ram);
+    RUN_TEST(test_startup_enables_224k_sram_before_using_high_stack);
     RUN_TEST(test_littlefs_backend_is_real_and_built);
     return UNITY_END();
 }

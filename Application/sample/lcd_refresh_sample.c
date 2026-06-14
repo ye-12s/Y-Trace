@@ -3,8 +3,6 @@
 #include <stdint.h>
 
 #include "Drivers/drv_lcd.h"
-#include "Drivers/drv_sram.h"
-#include "board.h"
 #include "rtthread.h"
 
 #define LCD_REFRESH_WIDTH       240U
@@ -108,14 +106,14 @@ static void lcd_refresh_thread_entry(void *parameter)
 {
     (void)parameter;
 
-    uint16_t *draw_buf = lcd_refresh_local_buf;
-    size_t buf_lines   = LCD_REFRESH_LOCAL_LINES;
-    rt_bool_t use_ext  = RT_FALSE;
+    uint16_t *draw_buf = (uint16_t *)rt_malloc(LCD_REFRESH_BUF_BYTES);
+    size_t buf_lines   = LCD_REFRESH_EXT_LINES;
+    rt_bool_t use_heap = RT_TRUE;
 
-    if (drv_sram_224k_prepare()) {
-        draw_buf  = (uint16_t *)RAM_EXT_START;
-        buf_lines = LCD_REFRESH_EXT_LINES;
-        use_ext   = RT_TRUE;
+    if (draw_buf == RT_NULL) {
+        draw_buf  = lcd_refresh_local_buf;
+        buf_lines = LCD_REFRESH_LOCAL_LINES;
+        use_heap  = RT_FALSE;
     }
 
     rt_kprintf("lcd_refresh: raw SPI DMA test, buffer=%u lines at 0x%08x\n",
@@ -131,7 +129,7 @@ static void lcd_refresh_thread_entry(void *parameter)
     while (1) {
         uint32_t frame_start = rt_tick_get();
 
-        if (use_ext) {
+        if (use_heap) {
             lcd_refresh_fill_dynamic(draw_buf, 0, LCD_REFRESH_EXT_LINES, frame);
             lcd_refresh_fill_dynamic(lcd_refresh_local_buf, LCD_REFRESH_EXT_LINES, LCD_REFRESH_TAIL_LINES, frame);
             lcd_refresh_begin_fullscreen();

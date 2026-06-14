@@ -10,9 +10,6 @@
 #define AT32_SRAM1_SIZE     RAM_SIZE
 #define AT32_SRAM1_START    RAM_START
 #define AT32_SRAM1_END      RAM_END
-#define AT32_SRAM_EXT_START RAM_EXT_START
-#define AT32_SRAM_EXT_SIZE  RAM_EXT_SIZE
-#define AT32_SRAM_TOTAL_END RAM_TOTAL_END
 
 #if defined(__CC_ARM) || defined(__CLANG_ARM)
 extern int Image$RW_IRAM1$ZI$Limit;

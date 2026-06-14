@@ -4,8 +4,6 @@
 #include <stdint.h>
 
 #include "Drivers/drv_lcd.h"
-#include "Drivers/drv_sram.h"
-#include "board.h"
 #include "lvgl.h"
 #include "map/map_benchmark.h"
 #include "rtthread.h"
@@ -50,8 +48,9 @@ static lvgl_flush_state_t lvgl_flush_state;
 
 static void lvgl_draw_buffer_init(void)
 {
-    if (drv_sram_224k_prepare() == RT_TRUE) {
-        lv_color_t *buf1 = (lv_color_t *)RAM_EXT_START;
+    lv_color_t *heap_buf = (lv_color_t *)rt_malloc(LVGL_DRAW_BUF_TOTAL_BYTES);
+    if (heap_buf != RT_NULL) {
+        lv_color_t *buf1 = heap_buf;
         lv_color_t *buf2 = buf1 + (LVGL_HOR_RES * LVGL_DRAW_BUF_LINES);
 
         lv_disp_draw_buf_init(&lvgl_draw_buf, buf1, buf2, LVGL_HOR_RES * LVGL_DRAW_BUF_LINES);

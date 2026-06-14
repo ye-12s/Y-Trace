@@ -51,6 +51,9 @@ defined in linker script */
   .weak  Reset_Handler
   .type  Reset_Handler, %function
 Reset_Handler:
+  bl  EnsureSram224K
+  ldr  r0, =_estack
+  msr  msp, r0
 
 /* Copy the data segment initializers from flash to SRAM */
   movs  r1, #0
@@ -89,6 +92,60 @@ LoopFillZerobss:
   bx  lr
 .size  Reset_Handler, .-Reset_Handler
 
+EnsureSram224K:
+  ldr  r0, =0x1FFFF810
+  ldrh  r1, [r0]
+  uxtb  r1, r1
+  cmp  r1, #0xFE
+  beq  Sram224KReady
+  cmp  r1, #0xFF
+  bne  Sram224KFault
+
+  ldr  r2, =0x4002200C
+WaitFlashIdleBeforeUsd:
+  ldr  r3, [r2]
+  tst  r3, #1
+  bne  WaitFlashIdleBeforeUsd
+
+  ldr  r2, =0x40022008
+  ldr  r3, =0x45670123
+  str  r3, [r2]
+  ldr  r3, =0xCDEF89AB
+  str  r3, [r2]
+
+  ldr  r2, =0x40022010
+WaitUsdUnlocked:
+  ldr  r3, [r2]
+  tst  r3, #(1 << 9)
+  beq  WaitUsdUnlocked
+
+  orr  r3, r3, #(1 << 4)
+  str  r3, [r2]
+  movs  r1, #0xFE
+  strh  r1, [r0]
+
+  ldr  r0, =0x4002200C
+WaitFlashIdleAfterUsd:
+  ldr  r1, [r0]
+  tst  r1, #1
+  bne  WaitFlashIdleAfterUsd
+
+  ldr  r3, [r2]
+  bic  r3, r3, #(1 << 4)
+  str  r3, [r2]
+
+  ldr  r0, =0xE000ED0C
+  ldr  r1, =0x05FA0004
+  str  r1, [r0]
+Sram224KResetWait:
+  b  Sram224KResetWait
+
+Sram224KReady:
+  bx  lr
+
+Sram224KFault:
+  b  Sram224KFault
+
 /**
  * @brief  This is the code that gets called when the processor receives an
  *         unexpected interrupt.  This simply enters an infinite loop, preserving
@@ -114,7 +171,7 @@ Infinite_Loop:
 
 
 g_pfnVectors:
-  .word  _estack
+  .word  0x20018000
   .word  Reset_Handler
   .word  NMI_Handler
   .word  HardFault_Handler
