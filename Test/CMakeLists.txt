@@ -45,6 +45,7 @@ target_include_directories(test_vfs_core PRIVATE ${Y_TRACE_APP_DIR})
 target_compile_definitions(test_vfs_core PRIVATE
     Y_TRACE_VFS_FATFS_SOURCE_PATH="${PROJECT_SOURCE_DIR}/../Application/storage/vfs_fatfs.c"
     Y_TRACE_VFS_SELFTEST_SOURCE_PATH="${PROJECT_SOURCE_DIR}/../Application/storage/vfs_selftest.c"
+    Y_TRACE_DRV_SDIO_SOURCE_PATH="${PROJECT_SOURCE_DIR}/../Board/Drivers/drv_sdio.c"
     Y_TRACE_CMAKE_OPTIONS_PATH="${PROJECT_SOURCE_DIR}/../cmake/options.cmake"
     Y_TRACE_CMAKE_SOURCES_PATH="${PROJECT_SOURCE_DIR}/../cmake/sources.cmake")
 target_compile_options(test_vfs_core PRIVATE -Wall -Wextra)

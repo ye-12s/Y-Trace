@@ -43,6 +43,27 @@ sd_error_status_type get_ext_csd(void);
 sd_error_status_type scr_find(void);
 uint8_t convert_from_bytes_to_power_of_two(uint16_t number_of_bytes);
 
+static uint32_t command_wait_response_flags(const char *name)
+{
+  uint32_t sts_reg = 0;
+  uint32_t timeout = SDIO_CMD0TIMEOUT;
+
+  while (timeout--) {
+    sts_reg = SDIOx->sts;
+    if (sts_reg &
+        (SDIO_CMDFAIL_FLAG | SDIO_CMDTIMEOUT_FLAG | SDIO_CMDRSPCMPL_FLAG)) {
+      break;
+    }
+  }
+
+  if (timeout == 0) {
+    rt_kprintf("[SDIO] %s response wait timeout sts=0x%08lx\n", name, (unsigned long)sts_reg);
+    sts_reg |= SDIO_CMDTIMEOUT_FLAG;
+  }
+
+  return sts_reg;
+}
+
 /**
  * @brief  initializes the sd card and put it into standby state (ready for data
  *         transfer).
@@ -178,8 +199,12 @@ sd_error_status_type sd_init(void) {
     /* set sdio clock divider */
     sdio_clock_set(clkdiv);
 
-    /* set transfer mode */
-    status = sd_device_mode_set(SD_TRANSFER_DMA_MODE);
+    /*
+     * Keep the filesystem path on polling transfers for now. The FatFs port
+     * already breaks requests into single blocks; polling avoids depending on
+     * SDIO DMA interrupt completion while the storage stack is being validated.
+     */
+    status = sd_device_mode_set(SD_TRANSFER_POLLING_MODE);
   }
 
   if (status == SD_OK) {
@@ -1818,24 +1843,15 @@ sd_error_status_type command_rsp7_error(void) {
  * @retval sd_error_status_type: sd card error code.
  */
 sd_error_status_type command_rsp1_error(uint8_t cmd) {
-  uint32_t sts_reg = 0;
   uint32_t rsp_cmd = 0;
+  uint32_t sts_reg = command_wait_response_flags("R1");
 
-  while (1) {
-    sts_reg = SDIOx->sts;
-
-    if (sts_reg &
-        (SDIO_CMDFAIL_FLAG | SDIO_CMDTIMEOUT_FLAG | SDIO_CMDRSPCMPL_FLAG)) {
-      break;
-    }
-  }
-
-  if (sdio_flag_get(SDIOx, SDIO_CMDTIMEOUT_FLAG) != RESET) {
+  if ((sts_reg & SDIO_CMDTIMEOUT_FLAG) != 0U) {
     sdio_flag_clear(SDIOx, SDIO_CMDTIMEOUT_FLAG);
     return SD_CMD_RSP_TIMEOUT;
   }
 
-  if (sdio_flag_get(SDIOx, SDIO_CMDFAIL_FLAG) != RESET) {
+  if ((sts_reg & SDIO_CMDFAIL_FLAG) != 0U) {
     sdio_flag_clear(SDIOx, SDIO_CMDFAIL_FLAG);
     return SD_CMD_FAIL;
   }
@@ -1857,19 +1873,9 @@ sd_error_status_type command_rsp1_error(uint8_t cmd) {
  * @retval sd_error_status_type: sd card error code.
  */
 sd_error_status_type command_rsp3_error(void) {
-  uint32_t sts_reg = 0;
-  ;
+  uint32_t sts_reg = command_wait_response_flags("R3");
 
-  while (1) {
-    sts_reg = SDIOx->sts;
-
-    if (sts_reg &
-        (SDIO_CMDFAIL_FLAG | SDIO_CMDTIMEOUT_FLAG | SDIO_CMDRSPCMPL_FLAG)) {
-      break;
-    }
-  }
-
-  if (sdio_flag_get(SDIOx, SDIO_CMDTIMEOUT_FLAG) != RESET) {
+  if ((sts_reg & SDIO_CMDTIMEOUT_FLAG) != 0U) {
     sdio_flag_clear(SDIOx, SDIO_CMDTIMEOUT_FLAG);
     return SD_CMD_RSP_TIMEOUT;
   }
@@ -1921,23 +1927,15 @@ sd_error_status_type command_rsp2_error(void) {
  * @retval sd_error_status_type: sd card error code.
  */
 sd_error_status_type command_rsp4_error(uint8_t cmd) {
-  uint32_t sts_reg = 0, rsp_cmd = 0;
+  uint32_t sts_reg = command_wait_response_flags("R4");
+  uint32_t rsp_cmd = 0;
 
-  while (1) {
-    sts_reg = SDIOx->sts;
-
-    if (sts_reg &
-        (SDIO_CMDFAIL_FLAG | SDIO_CMDTIMEOUT_FLAG | SDIO_CMDRSPCMPL_FLAG)) {
-      break;
-    }
-  }
-
-  if (sdio_flag_get(SDIOx, SDIO_CMDTIMEOUT_FLAG) != RESET) {
+  if ((sts_reg & SDIO_CMDTIMEOUT_FLAG) != 0U) {
     sdio_flag_clear(SDIOx, SDIO_CMDTIMEOUT_FLAG);
     return SD_CMD_RSP_TIMEOUT;
   }
 
-  if (sdio_flag_get(SDIOx, SDIO_CMDFAIL_FLAG) != RESET) {
+  if ((sts_reg & SDIO_CMDFAIL_FLAG) != 0U) {
     sdio_flag_clear(SDIOx, SDIO_CMDFAIL_FLAG);
 
     return SD_CMD_FAIL;
@@ -1959,24 +1957,16 @@ sd_error_status_type command_rsp4_error(uint8_t cmd) {
  * @retval sd_error_status_type: sd card error code.
  */
 sd_error_status_type command_rsp5_error(uint8_t cmd) {
-  uint32_t sts_reg = 0, rsp_cmd = 0, response = 0;
+  uint32_t sts_reg = command_wait_response_flags("R5");
+  uint32_t rsp_cmd = 0, response = 0;
 
-  while (1) {
-    sts_reg = SDIOx->sts;
-
-    if (sts_reg &
-        (SDIO_CMDFAIL_FLAG | SDIO_CMDTIMEOUT_FLAG | SDIO_CMDRSPCMPL_FLAG)) {
-      break;
-    }
-  }
-
-  if (sdio_flag_get(SDIOx, SDIO_CMDTIMEOUT_FLAG) != RESET) {
+  if ((sts_reg & SDIO_CMDTIMEOUT_FLAG) != 0U) {
     sdio_flag_clear(SDIOx, SDIO_CMDTIMEOUT_FLAG);
 
     return SD_CMD_RSP_TIMEOUT;
   }
 
-  if (sdio_flag_get(SDIOx, SDIO_CMDFAIL_FLAG) != RESET) {
+  if ((sts_reg & SDIO_CMDFAIL_FLAG) != 0U) {
     sdio_flag_clear(SDIOx, SDIO_CMDFAIL_FLAG);
 
     return SD_CMD_FAIL;
@@ -2015,23 +2005,15 @@ sd_error_status_type command_rsp5_error(uint8_t cmd) {
  */
 sd_error_status_type command_rsp6_error(uint8_t cmd, uint16_t* prca) {
   sd_error_status_type status = SD_OK;
-  uint32_t sts_reg, rsp_cmd = 0, response = 0;
+  uint32_t sts_reg = command_wait_response_flags("R6");
+  uint32_t rsp_cmd = 0, response = 0;
 
-  while (1) {
-    sts_reg = SDIOx->sts;
-
-    if (sts_reg &
-        (SDIO_CMDFAIL_FLAG | SDIO_CMDTIMEOUT_FLAG | SDIO_CMDRSPCMPL_FLAG)) {
-      break;
-    }
-  }
-
-  if (sdio_flag_get(SDIOx, SDIO_CMDTIMEOUT_FLAG) != RESET) {
+  if ((sts_reg & SDIO_CMDTIMEOUT_FLAG) != 0U) {
     sdio_flag_clear(SDIOx, SDIO_CMDTIMEOUT_FLAG);
     return SD_CMD_RSP_TIMEOUT;
   }
 
-  if (sdio_flag_get(SDIOx, SDIO_CMDFAIL_FLAG) != RESET) {
+  if ((sts_reg & SDIO_CMDFAIL_FLAG) != 0U) {
     sdio_flag_clear(SDIOx, SDIO_CMDFAIL_FLAG);
     return SD_CMD_FAIL;
   }
@@ -2725,4 +2707,3 @@ void sd_dma_config(uint32_t* mbuf, uint32_t buf_size, dma_dir_type dir) {
 
   dma_channel_enable(DMA2_CHANNEL5, TRUE);
 }
-

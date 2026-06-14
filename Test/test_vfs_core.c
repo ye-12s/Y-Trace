@@ -245,11 +245,33 @@ static void test_vfs_selftest_exposes_command_and_autorun_gate(void)
 
     TEST_ASSERT_NOT_NULL(strstr(source, "MSH_CMD_EXPORT(vfs_selftest"));
     TEST_ASSERT_NOT_NULL(strstr(source, "Y_TRACE_VFS_SELFTEST_AUTORUN"));
+    TEST_ASSERT_NOT_NULL(strstr(source, "Y_TRACE_VFS_SELFTEST_SD_AUTORUN"));
     TEST_ASSERT_NOT_NULL(strstr(source, "INIT_APP_EXPORT(vfs_selftest_autorun"));
+    TEST_ASSERT_NOT_NULL(strstr(source, "INIT_COMPONENT_EXPORT(vfs_selftest_sd_autorun"));
+    TEST_ASSERT_NOT_NULL(strstr(source, "VFS_SELFTEST FAIL phase=sd_open_write"));
     TEST_ASSERT_NOT_NULL(strstr(source, "VFS_SELFTEST PASS"));
     TEST_ASSERT_NOT_NULL(strstr(options, "option(Y_TRACE_VFS_SELFTEST_AUTORUN"));
+    TEST_ASSERT_NOT_NULL(strstr(options, "option(Y_TRACE_VFS_SELFTEST_SD_AUTORUN"));
     TEST_ASSERT_NOT_NULL(strstr(options, "Y_TRACE_VFS_SELFTEST_AUTORUN"));
+    TEST_ASSERT_NOT_NULL(strstr(options, "Y_TRACE_VFS_SELFTEST_SD_AUTORUN"));
     TEST_ASSERT_NOT_NULL(strstr(sources, "Application/storage/vfs_selftest.c"));
+}
+
+static void test_sdio_command_response_waits_are_bounded(void)
+{
+    FILE *file = fopen(Y_TRACE_DRV_SDIO_SOURCE_PATH, "rb");
+    static char buffer[120000];
+    size_t read_len = 0U;
+
+    TEST_ASSERT_NOT_NULL(file);
+    read_len = fread(buffer, 1U, sizeof(buffer) - 1U, file);
+    fclose(file);
+
+    TEST_ASSERT_GREATER_THAN_UINT32(0U, read_len);
+    TEST_ASSERT_NOT_NULL(strstr(buffer, "command_wait_response_flags"));
+    TEST_ASSERT_NOT_NULL(strstr(buffer, "SDIO_CMD0TIMEOUT"));
+    TEST_ASSERT_NOT_NULL(strstr(buffer, "response wait timeout"));
+    TEST_ASSERT_NULL(strstr(buffer, "while (1)"));
 }
 
 int main(void)
@@ -263,5 +285,6 @@ int main(void)
     RUN_TEST(test_vfs_rejects_missing_mount_and_long_paths);
     RUN_TEST(test_vfs_fatfs_backend_source_preserves_error_mapping_boundary);
     RUN_TEST(test_vfs_selftest_exposes_command_and_autorun_gate);
+    RUN_TEST(test_sdio_command_response_waits_are_bounded);
     return UNITY_END();
 }

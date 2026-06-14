@@ -355,8 +355,8 @@ static int vfs_selftest_sd_api(void)
 
     ret = vfs_open(&file, "/sd/VFSTST.TXT", VFS_O_WRITE | VFS_O_CREATE | VFS_O_TRUNC);
     if (ret != VFS_OK) {
-        rt_kprintf("VFS_SELFTEST SKIP phase=sd_open_write ret=%d\n", ret);
-        return 0;
+        rt_kprintf("VFS_SELFTEST FAIL phase=sd_open_write ret=%d\n", ret);
+        return -1;
     }
 
     ret = vfs_write(&file, payload, (uint32_t)strlen(payload), &count);
@@ -409,4 +409,13 @@ static int vfs_selftest_autorun(void)
     return vfs_selftest(0, RT_NULL);
 }
 INIT_APP_EXPORT(vfs_selftest_autorun);
+#endif
+
+#ifdef Y_TRACE_VFS_SELFTEST_SD_AUTORUN
+static int vfs_selftest_sd_autorun(void)
+{
+    char *argv[] = {"vfs_selftest", "sd"};
+    return vfs_selftest(2, argv);
+}
+INIT_COMPONENT_EXPORT(vfs_selftest_sd_autorun);
 #endif

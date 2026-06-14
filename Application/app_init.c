@@ -87,6 +87,10 @@ INIT_COMPONENT_EXPORT(lcd_init);
 
 static int app_init(void)
 {
+#ifdef Y_TRACE_VFS_SELFTEST_SD_AUTORUN
+    LOG_I("Application services skipped for VFS SD self-test.");
+    return 0;
+#else
 #ifdef Y_TRACE_ENABLE_LVGL
     int result = app_lvgl_port_init();
     if (result != 0) {
@@ -110,5 +114,6 @@ static int app_init(void)
 
     LOG_I("Application initialization completed.");
     return 0;
+#endif
 }
 INIT_APP_EXPORT(app_init);
