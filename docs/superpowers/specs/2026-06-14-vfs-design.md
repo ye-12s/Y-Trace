@@ -175,17 +175,18 @@ At the critical watermark, `vfs_write()` may return a space error instead of cla
 
 ## Error Semantics
 
-Suggested error codes:
+VFS errors use a dedicated negative range so they do not overlap RT-Thread errors such as `-RT_ERROR`, `-RT_ETIMEOUT`, or `-RT_EIO`. Backend-specific errors must be mapped to these VFS errors before returning through the public VFS API.
 
 ```c
-#define VFS_OK                 0
-#define VFS_ERR_INVALID       -1
-#define VFS_ERR_NOT_FOUND     -2
-#define VFS_ERR_IO            -3
-#define VFS_ERR_NO_SPACE      -4
-#define VFS_ERR_BUSY          -5
-#define VFS_ERR_NOT_SUPPORTED -6
-#define VFS_ERR_PATH_TOO_LONG -7
+#define VFS_OK                  0
+#define VFS_ERR_BASE           -1000
+#define VFS_ERR_INVALID        (VFS_ERR_BASE - 1)
+#define VFS_ERR_NOT_FOUND      (VFS_ERR_BASE - 2)
+#define VFS_ERR_IO             (VFS_ERR_BASE - 3)
+#define VFS_ERR_NO_SPACE       (VFS_ERR_BASE - 4)
+#define VFS_ERR_BUSY           (VFS_ERR_BASE - 5)
+#define VFS_ERR_NOT_SUPPORTED  (VFS_ERR_BASE - 6)
+#define VFS_ERR_PATH_TOO_LONG  (VFS_ERR_BASE - 7)
 ```
 
 For cached writes, success means bytes were accepted by the cache layer or written to the selected backend according to the active policy. It does not mean background submission to the final path has already completed unless `vfs_sync()` reports success after a synchronous flush.
